@@ -37,6 +37,24 @@ class WebContractTests(unittest.TestCase):
         self.assertIn('trip = { ...trip, stages: [], departureChecks: [], warnings: [] };', self.html)
         self.assertIn('departureChecks = {};', self.html)
 
+    def test_tactile_drag_supports_pointer_and_touch_input(self):
+        for contract in [
+            '.drag-ghost',
+            'handle.addEventListener("pointerdown"',
+            'handle.setPointerCapture(event.pointerId)',
+            'document.elementFromPoint(event.clientX, event.clientY)',
+        ]:
+            with self.subTest(contract=contract):
+                self.assertIn(contract, self.html)
+
+    def test_motion_is_accessible_and_intentional(self):
+        self.assertIn('@media (prefers-reduced-motion: reduce)', self.html)
+        self.assertIn('--ease-out: cubic-bezier(.23, 1, .32, 1);', self.html)
+        self.assertNotIn('transition: all', self.html)
+
+    def test_status_feedback_is_announced(self):
+        self.assertIn('role="status" aria-live="polite"', self.html)
+
 
 if __name__ == "__main__":
     unittest.main()

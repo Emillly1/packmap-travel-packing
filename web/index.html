@@ -7,31 +7,37 @@
   <style>
     :root {
       color-scheme: light;
-      --bg: #f6f7f4;
-      --paper: #fff;
-      --paper-soft: #fbfbf8;
-      --ink: #1f2623;
-      --muted: #697370;
-      --line: #dcdfda;
-      --green: #0f6f65;
-      --green-soft: #e4f2ee;
-      --coral: #b25245;
-      --coral-soft: #fbebe8;
-      --amber: #90671b;
-      --amber-soft: #f8efd8;
-      --blue: #2e667a;
-      --blue-soft: #e5f0f4;
-      --shadow: 0 14px 34px rgba(31, 38, 35, .08);
-      --shadow-soft: 0 4px 14px rgba(31, 38, 35, .05);
+      --bg: #f1f2ec;
+      --paper: #fffefa;
+      --paper-soft: #f7f7f1;
+      --ink: #26332e;
+      --muted: #68746f;
+      --line: #d7d9d1;
+      --green: #2d796d;
+      --green-soft: #e4f1eb;
+      --coral: #c95f52;
+      --coral-soft: #f8e6e1;
+      --amber: #b78324;
+      --amber-soft: #f5ecd3;
+      --blue: #477c98;
+      --blue-soft: #e2edf2;
+      --lilac: #77739a;
+      --lilac-soft: #ebe9f2;
+      --shadow: 0 15px 34px rgba(55, 63, 57, .10), 0 2px 4px rgba(55, 63, 57, .05);
+      --shadow-soft: 0 5px 14px rgba(55, 63, 57, .07), 0 1px 2px rgba(55, 63, 57, .05);
+      --ease-out: cubic-bezier(.23, 1, .32, 1);
+      --ease-in-out: cubic-bezier(.77, 0, .175, 1);
     }
 
     * { box-sizing: border-box; }
 
     body {
       margin: 0;
-      background:
-        linear-gradient(180deg, #eef3f0 0, var(--bg) 210px),
-        var(--bg);
+      min-height: 100vh;
+      background-color: var(--bg);
+      background-image:
+        linear-gradient(rgba(255, 255, 255, .42), rgba(255, 255, 255, 0) 190px),
+        repeating-linear-gradient(90deg, transparent 0 47px, rgba(60, 78, 69, .018) 48px);
       color: var(--ink);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
         "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
@@ -45,10 +51,16 @@
       background: var(--paper);
       color: var(--ink);
       cursor: pointer;
-      transition: border-color .16s ease, background .16s ease, transform .16s ease, box-shadow .16s ease;
+      box-shadow: 0 1px 0 rgba(38, 51, 46, .05);
+      transition:
+        border-color 160ms ease,
+        background-color 160ms ease,
+        color 160ms ease,
+        transform 160ms var(--ease-out),
+        box-shadow 160ms ease;
     }
 
-    button:hover { border-color: #aab4b0; box-shadow: var(--shadow-soft); }
+    button:active { transform: scale(.97); }
     button:focus-visible, input:focus-visible, select:focus-visible {
       outline: 3px solid rgba(23, 107, 91, .22);
       outline-offset: 2px;
@@ -59,8 +71,9 @@
       top: 0;
       z-index: 20;
       border-bottom: 1px solid var(--line);
-      background: rgba(255, 255, 255, .92);
-      backdrop-filter: blur(12px);
+      background: rgba(255, 254, 250, .94);
+      backdrop-filter: blur(14px) saturate(1.1);
+      box-shadow: 0 2px 12px rgba(55, 63, 57, .05);
     }
 
     .header-inner {
@@ -88,7 +101,8 @@
       margin-right: 8px;
       border-radius: 2px;
       vertical-align: -4px;
-      background: linear-gradient(180deg, var(--green), var(--blue));
+      background: var(--green);
+      box-shadow: 4px 0 0 var(--amber), 8px 0 0 var(--coral);
     }
 
     .title-block p {
@@ -106,7 +120,7 @@
       align-items: center;
       border: 1px solid #bfc5c2;
       border-radius: 8px;
-      background: #fff;
+      background: var(--paper);
       overflow: hidden;
       box-shadow: var(--shadow-soft);
     }
@@ -126,6 +140,8 @@
       background: transparent;
       font-size: 15px;
     }
+
+    #searchInput::-webkit-search-cancel-button { display: none; }
 
     #clearSearch {
       width: 28px;
@@ -180,7 +196,8 @@
       padding: 12px 14px;
       border: 1px solid var(--line);
       border-radius: 8px;
-      background: linear-gradient(90deg, #ffffff, #f3f8f6);
+      border-left: 5px solid var(--green);
+      background: var(--paper);
       box-shadow: var(--shadow-soft);
     }
 
@@ -206,6 +223,13 @@
       background: var(--paper);
       box-shadow: var(--shadow);
       overflow: hidden;
+    }
+
+    .sidebar::before {
+      content: "";
+      display: block;
+      height: 5px;
+      background: linear-gradient(90deg, var(--green) 0 34%, var(--amber) 34% 67%, var(--coral) 67%);
     }
 
     .progress-panel {
@@ -235,7 +259,8 @@
       width: 0%;
       height: 100%;
       border-radius: inherit;
-      background: linear-gradient(90deg, var(--green), var(--blue));
+      background: linear-gradient(90deg, var(--green), #69a894, var(--blue));
+      transition: width 240ms var(--ease-out);
     }
 
     .summary {
@@ -249,6 +274,10 @@
     .metric:nth-child(n+3) { border-top: 1px solid var(--line); }
     .metric strong { display: block; font-size: 22px; line-height: 1.1; }
     .metric span { color: var(--muted); font-size: 12px; }
+    .metric:nth-child(1) strong { color: var(--coral); }
+    .metric:nth-child(2) strong { color: var(--blue); }
+    .metric:nth-child(3) strong { color: var(--green); }
+    .metric:nth-child(4) strong { color: var(--amber); }
 
     .jump-list { padding: 8px; }
     .jump-list button {
@@ -309,7 +338,9 @@
       padding: 10px 12px;
       display: flex;
       flex-wrap: wrap;
-      gap: 7px;
+      gap: 8px;
+      background-image: linear-gradient(rgba(45, 121, 109, .022) 1px, transparent 1px);
+      background-size: 100% 31px;
     }
 
     .departure-check {
@@ -320,8 +351,14 @@
       padding: 4px 7px;
       border: 1px solid #d9d9d4;
       border-radius: 7px;
-      background: #fff;
+      background: var(--paper);
       font-size: 12px;
+      box-shadow: 0 2px 5px rgba(55, 63, 57, .05);
+      transition:
+        border-color 160ms ease,
+        background-color 160ms ease,
+        transform 160ms var(--ease-out),
+        box-shadow 160ms ease;
     }
 
     .departure-check:has(input:checked) {
@@ -330,7 +367,7 @@
       color: #17483f;
     }
 
-    .departure-check input { accent-color: var(--green); }
+    .departure-check:active { transform: scale(.98); }
 
     .wizard-grid {
       display: grid;
@@ -386,14 +423,36 @@
     }
 
     .luggage {
-      margin-bottom: 16px;
-      border: 1px solid var(--line);
+      --case-color: var(--green);
+      --case-soft: var(--green-soft);
+      --tray-color: #f5faf7;
+      position: relative;
+      margin: 24px 0 22px;
+      border: 2px solid var(--case-color);
       border-radius: 8px;
       background: var(--paper);
       box-shadow: var(--shadow);
-      overflow: hidden;
       scroll-margin-top: 94px;
     }
+
+    .luggage::before {
+      content: "";
+      position: absolute;
+      top: -11px;
+      left: 50%;
+      width: 58px;
+      height: 10px;
+      border: 2px solid var(--case-color);
+      border-bottom: 0;
+      border-radius: 7px 7px 0 0;
+      background: var(--case-soft);
+      transform: translateX(-50%);
+    }
+
+    .luggage[data-tone="coral"] { --case-color: var(--coral); --case-soft: var(--coral-soft); --tray-color: #fff8f6; }
+    .luggage[data-tone="blue"] { --case-color: var(--blue); --case-soft: var(--blue-soft); --tray-color: #f6fafc; }
+    .luggage[data-tone="amber"] { --case-color: var(--amber); --case-soft: var(--amber-soft); --tray-color: #fcfaf4; }
+    .luggage[data-tone="lilac"] { --case-color: var(--lilac); --case-soft: var(--lilac-soft); --tray-color: #faf9fc; }
 
     .luggage-head {
       min-height: 58px;
@@ -402,8 +461,9 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      border-bottom: 1px solid var(--line);
-      background: linear-gradient(90deg, #ffffff, #f8faf8);
+      border-bottom: 1px solid color-mix(in srgb, var(--case-color) 30%, var(--line));
+      border-radius: 6px 6px 0 0;
+      background: var(--case-soft);
     }
 
     .luggage-head h2 {
@@ -414,6 +474,7 @@
 
     .luggage-head p { margin: 3px 0 0; color: var(--muted); font-size: 12px; }
     .count-badge { color: var(--green); font-size: 13px; font-weight: 750; }
+    .luggage .count-badge { color: var(--case-color); }
 
     .luggage-meta {
       min-width: 160px;
@@ -425,31 +486,37 @@
       height: 6px;
       overflow: hidden;
       border-radius: 999px;
-      background: #e6e9e5;
+      background: rgba(255, 255, 255, .7);
+      box-shadow: inset 0 0 0 1px rgba(38, 51, 46, .07);
     }
 
     .luggage-progress span {
       display: block;
       height: 100%;
       border-radius: inherit;
-      background: linear-gradient(90deg, var(--green), var(--blue));
+      background: var(--case-color);
+      transition: width 240ms var(--ease-out);
     }
 
     .compartment-grid {
       padding: 14px;
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
       gap: 14px;
       align-items: start;
+      border-radius: 0 0 6px 6px;
+      background: color-mix(in srgb, var(--case-soft) 56%, var(--paper));
     }
 
     .compartment {
       min-width: 0;
-      border: 1px solid var(--line);
+      border: 1px solid color-mix(in srgb, var(--case-color) 25%, var(--line));
       border-radius: 8px;
-      background: #f8faf8;
+      background: var(--tray-color);
       scroll-margin-top: 100px;
-      box-shadow: var(--shadow-soft);
+      box-shadow:
+        inset 0 0 0 3px rgba(255, 255, 255, .56),
+        0 5px 12px rgba(55, 63, 57, .07);
     }
 
     .container-head {
@@ -460,7 +527,7 @@
       justify-content: space-between;
       gap: 8px;
       border-bottom: 1px solid var(--line);
-      background: #fff;
+      background: rgba(255, 254, 250, .86);
     }
 
     .container-title { min-width: 0; }
@@ -475,7 +542,7 @@
       font-size: 16px;
       line-height: 1;
       box-shadow: none;
-      color: #40504b;
+      color: #4a5953;
     }
 
     .icon-btn:hover { background: #f1f5f3; box-shadow: none; }
@@ -485,12 +552,23 @@
       padding: 9px;
       display: grid;
       gap: 7px;
+      transition:
+        background-color 180ms ease,
+        box-shadow 180ms ease,
+        transform 180ms var(--ease-out);
+    }
+
+    body.is-sorting .children[data-drop-id] {
+      background-color: color-mix(in srgb, var(--green-soft) 42%, transparent);
+      box-shadow: inset 0 0 0 1px rgba(45, 121, 109, .24);
     }
 
     .children.drag-over {
-      outline: 2px solid var(--green);
-      outline-offset: -4px;
+      outline: 2px dashed var(--green);
+      outline-offset: -5px;
       background: var(--green-soft);
+      box-shadow: inset 0 0 0 5px rgba(255, 255, 255, .54);
+      transform: scale(1.008);
     }
 
     .empty-container {
@@ -510,13 +588,18 @@
       border-radius: 7px;
       background: var(--paper);
       scroll-margin-top: 110px;
-      box-shadow: 0 1px 0 rgba(31, 38, 35, .03);
+      box-shadow: 0 2px 4px rgba(55, 63, 57, .07), 0 1px 0 rgba(255, 255, 255, .8) inset;
+      transition:
+        border-color 160ms ease,
+        background-color 160ms ease,
+        transform 160ms var(--ease-out),
+        box-shadow 160ms ease,
+        opacity 160ms ease;
     }
 
-    .node.flash, .compact-item.flash { animation: flash 1.2s ease; }
-    @keyframes flash {
-      0%, 100% { box-shadow: none; }
-      30% { box-shadow: 0 0 0 4px rgba(163, 79, 67, .24); border-color: var(--coral); }
+    .node.flash, .compact-item.flash {
+      border-color: var(--coral);
+      box-shadow: 0 0 0 4px rgba(201, 95, 82, .18), var(--shadow-soft);
     }
 
     .node-row {
@@ -530,15 +613,52 @@
 
     .drag-handle {
       width: 22px;
-      color: #a6ada9;
+      color: #9aa49f;
       cursor: grab;
       user-select: none;
+      touch-action: none;
       text-align: center;
       font-size: 17px;
     }
 
     .drag-handle:active { cursor: grabbing; }
-    .packed-toggle { width: 17px; height: 17px; margin: 0; accent-color: var(--green); cursor: pointer; }
+    .packed-toggle {
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      margin: 0;
+      display: grid;
+      place-content: center;
+      border: 1.5px solid #aab3ae;
+      border-radius: 5px;
+      background: #fff;
+      cursor: pointer;
+      transition:
+        border-color 160ms ease,
+        background-color 160ms ease,
+        transform 160ms var(--ease-out),
+        box-shadow 160ms ease;
+    }
+
+    .packed-toggle::before {
+      content: "";
+      width: 5px;
+      height: 9px;
+      border: solid #fff;
+      border-width: 0 2px 2px 0;
+      opacity: 0;
+      transform: rotate(45deg) scale(.75);
+      transition: opacity 140ms ease, transform 160ms var(--ease-out);
+    }
+
+    .packed-toggle:checked {
+      border-color: var(--green);
+      background: var(--green);
+      box-shadow: 0 2px 5px rgba(45, 121, 109, .22);
+    }
+
+    .packed-toggle:checked::before { opacity: 1; transform: rotate(45deg) scale(1); }
+    .packed-toggle:active { transform: scale(.88); }
     .bag-spacer { width: 18px; height: 18px; }
     .node-name { min-width: 0; font-size: 14px; line-height: 1.35; overflow-wrap: anywhere; }
     .node-name small { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; }
@@ -549,9 +669,18 @@
     .node.item[data-kind="other"] { border-left: 4px solid var(--green); }
 
     .bag > .node-row { background: #ffffff; }
-    .bag > .children { border-top: 1px solid #ecefeb; background: #f6f8f6; }
+    .bag > .node-row { border-radius: 6px 6px 0 0; }
+    .bag > .children {
+      border-top: 1px dashed #daddd5;
+      border-radius: 0 0 6px 6px;
+      background: color-mix(in srgb, var(--paper-soft) 82%, var(--case-soft));
+    }
     .bag > .children[hidden] { display: none; }
     .bag-label { color: var(--green); font-size: 11px; font-weight: 700; }
+    .bag-complete .bag-label::after {
+      content: " · 已整理";
+      color: var(--coral);
+    }
 
     .children.compact {
       display: flex;
@@ -574,7 +703,13 @@
       border-radius: 7px;
       background: #fff;
       scroll-margin-top: 110px;
-      box-shadow: 0 1px 0 rgba(31, 38, 35, .03);
+      box-shadow: 0 2px 4px rgba(55, 63, 57, .07), 0 1px 0 rgba(255, 255, 255, .8) inset;
+      transition:
+        border-color 160ms ease,
+        background-color 160ms ease,
+        transform 160ms var(--ease-out),
+        box-shadow 160ms ease,
+        opacity 160ms ease;
     }
 
     .compact-item[data-kind="personal"] { border-left-color: var(--coral); }
@@ -582,7 +717,7 @@
     .compact-item[data-kind="clothes"] { border-left-color: var(--amber); }
     .compact-item[data-kind="other"] { border-left-color: var(--green); }
     .compact-item .drag-handle { width: 16px; font-size: 14px; }
-    .compact-item .packed-toggle { width: 15px; height: 15px; }
+    .compact-item .packed-toggle { width: 16px; height: 16px; }
     .compact-name { min-width: 0; max-width: 260px; font-size: 12px; line-height: 1.3; overflow-wrap: anywhere; }
     .compact-item .icon-actions { gap: 2px; }
     .compact-item .icon-btn { width: 24px; height: 24px; font-size: 13px; }
@@ -599,10 +734,32 @@
 
     .transport-badge.alert { background: var(--coral-soft); color: var(--coral); }
     .item-packed .node-name, .compact-item.item-packed .compact-name { color: #52615c; }
-    .item-packed { background: #fbfdfb; }
+    .item-packed {
+      border-color: #bcd6cc;
+      background: #f1f8f4;
+      box-shadow: 0 1px 2px rgba(55, 63, 57, .05), inset 3px 0 0 #7eaf9d;
+    }
     .print-title { display: none; }
 
-    .dragging { opacity: .42; }
+    .dragging {
+      z-index: 5;
+      opacity: .28;
+      cursor: grabbing;
+    }
+
+    .drag-ghost {
+      position: fixed !important;
+      inset: 0 auto auto 0;
+      z-index: 100;
+      margin: 0 !important;
+      pointer-events: none;
+      opacity: .96;
+      transform-origin: top left;
+      box-shadow: 0 20px 42px rgba(55, 63, 57, .24), 0 3px 8px rgba(55, 63, 57, .12) !important;
+      will-change: transform;
+    }
+
+    .drag-ghost .icon-actions { opacity: .35; }
 
     dialog {
       width: min(460px, calc(100% - 28px));
@@ -611,6 +768,14 @@
       padding: 0;
       color: var(--ink);
       box-shadow: 0 22px 70px rgba(20, 23, 21, .24);
+      opacity: 1;
+      transform: scale(1);
+      transition: opacity 220ms var(--ease-out), transform 220ms var(--ease-out);
+    }
+
+    @starting-style {
+      dialog[open] { opacity: 0; transform: scale(.96); }
+      .search-results:not([hidden]) { opacity: 0; transform: translateY(-4px) scale(.99); }
     }
 
     dialog::backdrop { background: rgba(28, 30, 29, .38); }
@@ -667,9 +832,40 @@
       color: #fff;
       font-size: 13px;
       box-shadow: 0 12px 34px rgba(0, 0, 0, .22);
+      opacity: 0;
+      transform: translateY(100%);
+      transition: opacity 260ms ease, transform 260ms ease;
     }
 
     .toast[hidden] { display: none; }
+    .toast[data-visible="true"] { opacity: 1; transform: translateY(0); }
+
+    .search-results {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      transform-origin: top center;
+      transition: opacity 180ms var(--ease-out), transform 180ms var(--ease-out);
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      button:hover { border-color: #aab4b0; box-shadow: var(--shadow-soft); }
+      .node:hover, .compact-item:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 7px 14px rgba(55, 63, 57, .11), 0 1px 0 rgba(255, 255, 255, .8) inset;
+      }
+      .departure-check:hover { transform: translateY(-1px); box-shadow: 0 5px 10px rgba(55, 63, 57, .08); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; }
+      button, .node, .compact-item, .children, .toast, dialog, .search-results, .packed-toggle {
+        transition-duration: 80ms !important;
+      }
+      .dragging, .children.drag-over, .node:hover, .compact-item:hover, .departure-check:hover {
+        transform: none !important;
+      }
+      .drag-ghost { opacity: .9; }
+    }
 
     @media (max-width: 900px) {
       .header-inner { grid-template-columns: 1fr auto; padding: 12px 0; }
@@ -691,10 +887,28 @@
       .compartment-grid { grid-template-columns: 1fr; padding: 8px; gap: 8px; }
       .sidebar { grid-template-columns: 1fr; }
       .summary { border-right: 0; border-bottom: 1px solid var(--line); }
-      .jump-list { padding: 6px; }
+      .jump-list {
+        padding: 6px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        overflow: visible;
+      }
+      .jump-list button { width: 100%; min-width: 0; }
+      .jump-list button span { min-width: 0; overflow-wrap: anywhere; }
       .header-actions { gap: 4px; }
       .header-actions button { width: 34px; height: 34px; font-size: 17px; }
       .node-row { grid-template-columns: 22px 22px minmax(0, 1fr) auto; }
+      .bag > .node-row {
+        grid-template-columns: 22px minmax(0, 1fr);
+        row-gap: 5px;
+      }
+      .bag > .node-row .bag-spacer { display: none; }
+      .bag > .node-row .node-name { grid-column: 2; }
+      .bag > .node-row .icon-actions {
+        grid-column: 1 / -1;
+        width: 100%;
+        justify-content: flex-end;
+      }
       .compact-name { max-width: 190px; }
       .wizard-grid { grid-template-columns: 1fr; }
     }
@@ -716,6 +930,7 @@
       .children[hidden] { display: grid !important; }
       .children.compact[hidden] { display: flex !important; }
       .packed-toggle { appearance: none; border: 1px solid #777; border-radius: 2px; }
+      .packed-toggle::before { display: none; }
       .packed-toggle:checked::after { content: "✓"; display: block; font-size: 11px; line-height: 14px; text-align: center; }
       .compact-item { break-inside: avoid; }
     }
@@ -959,7 +1174,7 @@
     </form>
   </dialog>
 
-  <div id="toast" class="toast" hidden></div>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
   <script>
     const STORAGE_KEY = "packmap-public-organizer-v1";
@@ -1087,6 +1302,7 @@
     let movingId = null;
     let deletingId = null;
     let draggedId = null;
+    let pointerDrag = null;
     let trip = loadTrip();
     let departureChecks = loadDepartureChecks();
     let recommendedItems = [];
@@ -1376,12 +1592,14 @@
       updateSearch();
     }
 
-    function renderLuggage(entry) {
+    function renderLuggage(entry, index) {
       const packed = countPacked(entry);
       const total = countItems(entry);
       const progress = percent(packed, total);
+      const tones = ["teal", "coral", "blue", "amber", "lilac"];
+      const complete = total > 0 && packed === total;
       return `
-        <section class="luggage" id="view-${entry.id}" data-node-id="${entry.id}">
+        <section class="luggage ${complete ? "is-complete" : ""}" id="view-${entry.id}" data-node-id="${entry.id}" data-tone="${tones[index % tones.length]}">
           <div class="luggage-head">
             <div><h2>${escapeHtml(entry.name)}</h2><p>${entry.type === "luggage" ? "行李容器" : "临时区域"}</p></div>
             <div class="luggage-meta">
@@ -1452,8 +1670,9 @@
     function renderNode(entry) {
       const isBag = entry.type === "bag";
       const isCollapsed = isBag && collapsedBags.has(entry.id);
+      const isComplete = isBag && countItems(entry) > 0 && countPacked(entry) === countItems(entry);
       return `
-        <article class="node ${isBag ? "bag" : "item"} ${entry.packed ? "item-packed" : ""}" id="view-${entry.id}"
+        <article class="node ${isBag ? "bag" : "item"} ${entry.packed ? "item-packed" : ""} ${isComplete ? "bag-complete" : ""}" id="view-${entry.id}"
           data-node-id="${entry.id}" data-kind="${entry.kind || "other"}" draggable="true">
           <div class="node-row">
             <span class="drag-handle" title="拖动" aria-hidden="true">⠿</span>
@@ -1487,7 +1706,7 @@
           found.entry.packed = checkbox.checked;
           saveData(checkbox.checked ? "已标记装入" : "已标记未装");
           render();
-          focusNode(found.entry.id);
+          focusNode(found.entry.id, checkbox.checked ? "packed" : "flash");
         });
       });
       board.querySelectorAll(".toggle-bag").forEach((button) => button.addEventListener("click", () => {
@@ -1507,14 +1726,83 @@
         element.addEventListener("dragstart", (event) => {
           draggedId = element.dataset.nodeId;
           element.classList.add("dragging");
+          document.body.classList.add("is-sorting");
           event.dataTransfer.effectAllowed = "move";
           event.dataTransfer.setData("text/plain", draggedId);
         });
         element.addEventListener("dragend", () => {
           element.classList.remove("dragging");
           board.querySelectorAll(".drag-over").forEach((drop) => drop.classList.remove("drag-over"));
+          document.body.classList.remove("is-sorting");
           draggedId = null;
         });
+      });
+
+      board.querySelectorAll(".drag-handle").forEach((handle) => {
+        const element = handle.closest("[draggable='true']");
+        if (!element) return;
+
+        const clearPointerDrag = () => {
+          if (!pointerDrag) return;
+          pointerDrag.ghost.remove();
+          pointerDrag.element.classList.remove("dragging");
+          board.querySelectorAll(".drag-over").forEach((drop) => drop.classList.remove("drag-over"));
+          document.body.classList.remove("is-sorting");
+          draggedId = null;
+          pointerDrag = null;
+        };
+
+        handle.addEventListener("pointerdown", (event) => {
+          if (!event.isPrimary || (event.pointerType === "mouse" && event.button !== 0) || pointerDrag) return;
+          event.preventDefault();
+          const rect = element.getBoundingClientRect();
+          const ghost = element.cloneNode(true);
+          ghost.removeAttribute("id");
+          ghost.removeAttribute("draggable");
+          ghost.setAttribute("aria-hidden", "true");
+          ghost.classList.remove("dragging", "flash");
+          ghost.classList.add("drag-ghost");
+          ghost.style.width = `${rect.width}px`;
+          ghost.style.height = `${rect.height}px`;
+          document.body.appendChild(ghost);
+
+          pointerDrag = {
+            pointerId: event.pointerId,
+            element,
+            ghost,
+            offsetX: event.clientX - rect.left,
+            offsetY: event.clientY - rect.top,
+            dropzone: null
+          };
+          draggedId = element.dataset.nodeId;
+          element.classList.add("dragging");
+          document.body.classList.add("is-sorting");
+          handle.setPointerCapture(event.pointerId);
+          ghost.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0) rotate(.7deg) scale(1.025)`;
+        });
+
+        handle.addEventListener("pointermove", (event) => {
+          if (!pointerDrag || pointerDrag.pointerId !== event.pointerId) return;
+          event.preventDefault();
+          const x = event.clientX - pointerDrag.offsetX;
+          const y = event.clientY - pointerDrag.offsetY;
+          pointerDrag.ghost.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(.7deg) scale(1.025)`;
+          const nextDropzone = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-drop-id]") || null;
+          if (nextDropzone === pointerDrag.dropzone) return;
+          pointerDrag.dropzone?.classList.remove("drag-over");
+          pointerDrag.dropzone = nextDropzone;
+          pointerDrag.dropzone?.classList.add("drag-over");
+        });
+
+        handle.addEventListener("pointerup", (event) => {
+          if (!pointerDrag || pointerDrag.pointerId !== event.pointerId) return;
+          const sourceId = pointerDrag.element.dataset.nodeId;
+          const targetId = pointerDrag.dropzone?.dataset.dropId;
+          clearPointerDrag();
+          if (targetId) moveEntry(sourceId, targetId);
+        });
+
+        handle.addEventListener("pointercancel", clearPointerDrag);
       });
 
       board.querySelectorAll("[data-drop-id]").forEach((dropzone) => {
@@ -1531,6 +1819,7 @@
           event.preventDefault();
           event.stopPropagation();
           dropzone.classList.remove("drag-over");
+          document.body.classList.remove("is-sorting");
           const sourceId = event.dataTransfer.getData("text/plain") || draggedId;
           moveEntry(sourceId, dropzone.dataset.dropId);
         });
@@ -1813,7 +2102,7 @@
       saveData("位置已更新");
       render();
       showToast(`${source.entry.name} → ${target.entry.name}`);
-      focusNode(sourceId);
+      focusNode(sourceId, "placed");
     }
 
     function openDelete(id) {
@@ -1930,7 +2219,7 @@
       });
     }
 
-    function focusNode(id) {
+    function focusNode(id, feedback = "flash") {
       const path = findPath(id);
       let expanded = false;
       path.forEach((entry) => {
@@ -1943,9 +2232,27 @@
       requestAnimationFrame(() => {
         const element = document.getElementById(`view-${id}`);
         if (!element) return;
-        element.scrollIntoView({ behavior: "smooth", block: "center" });
-        element.classList.remove("flash");
-        requestAnimationFrame(() => element.classList.add("flash"));
+        const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        element.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+        if (feedback === "flash") {
+          element.classList.add("flash");
+          setTimeout(() => element.classList.remove("flash"), 620);
+          return;
+        }
+        if (reduceMotion || !element.animate) return;
+        const frames = feedback === "placed"
+          ? [
+              { transform: "translateY(-7px) scale(1.018)", opacity: .78 },
+              { transform: "translateY(0) scale(1)", opacity: 1 }
+            ]
+          : [
+              { transform: "scale(.97)", opacity: .82 },
+              { transform: "scale(1)", opacity: 1 }
+            ];
+        element.animate(frames, {
+          duration: feedback === "placed" ? 280 : 220,
+          easing: "cubic-bezier(.23, 1, .32, 1)"
+        });
       });
     }
 
@@ -1959,8 +2266,13 @@
       const toast = document.getElementById("toast");
       toast.textContent = message;
       toast.hidden = false;
+      requestAnimationFrame(() => { toast.dataset.visible = "true"; });
       clearTimeout(showToast.timer);
-      showToast.timer = setTimeout(() => { toast.hidden = true; }, 2200);
+      clearTimeout(showToast.hideTimer);
+      showToast.timer = setTimeout(() => {
+        toast.dataset.visible = "false";
+        showToast.hideTimer = setTimeout(() => { toast.hidden = true; }, 280);
+      }, 2200);
     }
 
     function inferKind(name) {
