@@ -1,0 +1,2186 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PackMap 行李地图</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f4;
+      --paper: #fff;
+      --paper-soft: #fbfbf8;
+      --ink: #1f2623;
+      --muted: #697370;
+      --line: #dcdfda;
+      --green: #0f6f65;
+      --green-soft: #e4f2ee;
+      --coral: #b25245;
+      --coral-soft: #fbebe8;
+      --amber: #90671b;
+      --amber-soft: #f8efd8;
+      --blue: #2e667a;
+      --blue-soft: #e5f0f4;
+      --shadow: 0 14px 34px rgba(31, 38, 35, .08);
+      --shadow-soft: 0 4px 14px rgba(31, 38, 35, .05);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background:
+        linear-gradient(180deg, #eef3f0 0, var(--bg) 210px),
+        var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+
+    button, input, select { font: inherit; }
+
+    button {
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--paper);
+      color: var(--ink);
+      cursor: pointer;
+      transition: border-color .16s ease, background .16s ease, transform .16s ease, box-shadow .16s ease;
+    }
+
+    button:hover { border-color: #aab4b0; box-shadow: var(--shadow-soft); }
+    button:focus-visible, input:focus-visible, select:focus-visible {
+      outline: 3px solid rgba(23, 107, 91, .22);
+      outline-offset: 2px;
+    }
+
+    .app-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, .92);
+      backdrop-filter: blur(12px);
+    }
+
+    .header-inner {
+      width: min(1380px, calc(100% - 28px));
+      min-height: 82px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(220px, .8fr) minmax(300px, 1.2fr) auto;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .title-block h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .title-block h1::before {
+      content: "";
+      width: 10px;
+      height: 24px;
+      display: inline-block;
+      margin-right: 8px;
+      border-radius: 2px;
+      vertical-align: -4px;
+      background: linear-gradient(180deg, var(--green), var(--blue));
+    }
+
+    .title-block p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .search-wrap { position: relative; }
+
+    .search-row {
+      height: 46px;
+      display: grid;
+      grid-template-columns: 38px 1fr 34px;
+      align-items: center;
+      border: 1px solid #bfc5c2;
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .search-icon {
+      text-align: center;
+      color: var(--muted);
+      font-size: 20px;
+    }
+
+    #searchInput {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      outline: 0;
+      color: var(--ink);
+      background: transparent;
+      font-size: 15px;
+    }
+
+    #clearSearch {
+      width: 28px;
+      height: 28px;
+      border: 0;
+      box-shadow: none;
+      font-size: 18px;
+      color: var(--muted);
+    }
+
+    .search-results {
+      position: absolute;
+      top: 50px;
+      left: 0;
+      right: 0;
+      max-height: min(430px, 64vh);
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      box-shadow: 0 18px 48px rgba(25, 28, 26, .16);
+    }
+
+    .search-results[hidden] { display: none; }
+
+    .result {
+      width: 100%;
+      min-height: 56px;
+      padding: 9px 12px;
+      border: 0;
+      border-bottom: 1px solid #ecebe7;
+      border-radius: 0;
+      text-align: left;
+    }
+
+    .result:last-child { border-bottom: 0; }
+    .result:hover { background: #f7f8f6; }
+    .result strong { display: block; font-size: 14px; }
+    .result span { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; }
+    .empty-search { margin: 0; padding: 18px; color: var(--muted); text-align: center; }
+
+    .header-actions { display: flex; gap: 8px; }
+    .header-actions button { width: 40px; height: 40px; font-size: 19px; background: #fff; }
+    .header-actions button:first-child { border-color: var(--green); background: var(--green); color: #fff; font-size: 15px; font-weight: 750; }
+
+    .trip-strip {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(90deg, #ffffff, #f3f8f6);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .trip-strip strong { display: block; font-size: 15px; }
+    .trip-strip span { color: var(--muted); font-size: 12px; }
+    .trip-strip button { min-height: 34px; padding: 0 10px; background: #fff; }
+
+    .layout {
+      width: min(1380px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 20px 0 52px;
+      display: grid;
+      grid-template-columns: 246px minmax(0, 1fr);
+      gap: 18px;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 96px;
+      align-self: start;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .progress-panel {
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+      background: var(--paper-soft);
+    }
+
+    .progress-panel strong {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 13px;
+    }
+
+    .progress-panel span { color: var(--muted); font-weight: 600; }
+
+    .progress-track {
+      height: 8px;
+      margin-top: 10px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e5e8e3;
+    }
+
+    .progress-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--green), var(--blue));
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .metric { padding: 13px; }
+    .metric:nth-child(even) { border-left: 1px solid var(--line); }
+    .metric:nth-child(n+3) { border-top: 1px solid var(--line); }
+    .metric strong { display: block; font-size: 22px; line-height: 1.1; }
+    .metric span { color: var(--muted); font-size: 12px; }
+
+    .jump-list { padding: 8px; }
+    .jump-list button {
+      width: 100%;
+      min-height: 38px;
+      padding: 8px;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      border-color: transparent;
+      text-align: left;
+      box-shadow: none;
+      background: transparent;
+    }
+
+    .jump-list button:hover { background: #f2f6f4; box-shadow: none; }
+    .jump-list small { color: var(--muted); }
+
+    .board { min-width: 0; }
+
+    .safety-panel {
+      margin-bottom: 14px;
+      padding: 11px 13px;
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      border: 1px solid #dfb8ae;
+      border-radius: 8px;
+      background: var(--coral-soft);
+      color: #71382f;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .safety-panel strong { flex: 0 0 auto; }
+    .safety-panel button { border: 0; background: transparent; color: inherit; padding: 0; text-align: left; }
+
+    .departure-panel {
+      margin-bottom: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .departure-panel header {
+      padding: 11px 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+      background: var(--paper-soft);
+    }
+
+    .departure-panel h2 { margin: 0; font-size: 15px; letter-spacing: 0; }
+    .departure-list {
+      padding: 10px 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .departure-check {
+      min-height: 32px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 7px;
+      border: 1px solid #d9d9d4;
+      border-radius: 7px;
+      background: #fff;
+      font-size: 12px;
+    }
+
+    .departure-check:has(input:checked) {
+      border-color: #bed8d1;
+      background: var(--green-soft);
+      color: #17483f;
+    }
+
+    .departure-check input { accent-color: var(--green); }
+
+    .wizard-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .field.full { grid-column: 1 / -1; }
+    .field textarea.plain-textarea {
+      min-height: 88px;
+      font-family: inherit;
+      line-height: 1.5;
+    }
+
+    .checklist-preview {
+      max-height: 58vh;
+      overflow: auto;
+      display: grid;
+      gap: 12px;
+    }
+
+    .preview-group {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fafaf8;
+      overflow: hidden;
+    }
+
+    .preview-group h4 {
+      margin: 0;
+      padding: 9px 10px;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+    }
+
+    .preview-items {
+      padding: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .preview-item {
+      min-height: 30px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 7px;
+      border: 1px solid #d6d8d4;
+      border-radius: 7px;
+      background: #fff;
+      font-size: 12px;
+    }
+
+    .luggage {
+      margin-bottom: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      scroll-margin-top: 94px;
+    }
+
+    .luggage-head {
+      min-height: 58px;
+      padding: 11px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(90deg, #ffffff, #f8faf8);
+    }
+
+    .luggage-head h2 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+
+    .luggage-head p { margin: 3px 0 0; color: var(--muted); font-size: 12px; }
+    .count-badge { color: var(--green); font-size: 13px; font-weight: 750; }
+
+    .luggage-meta {
+      min-width: 160px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .luggage-progress {
+      height: 6px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e6e9e5;
+    }
+
+    .luggage-progress span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--green), var(--blue));
+    }
+
+    .compartment-grid {
+      padding: 14px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      align-items: start;
+    }
+
+    .compartment {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8faf8;
+      scroll-margin-top: 100px;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .container-head {
+      min-height: 46px;
+      padding: 9px 11px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .container-title { min-width: 0; }
+    .container-title strong { font-size: 14px; }
+    .container-title small { margin-left: 6px; color: var(--muted); }
+
+    .icon-actions { display: flex; gap: 4px; flex: 0 0 auto; }
+    .icon-btn {
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      font-size: 16px;
+      line-height: 1;
+      box-shadow: none;
+      color: #40504b;
+    }
+
+    .icon-btn:hover { background: #f1f5f3; box-shadow: none; }
+
+    .children {
+      min-height: 62px;
+      padding: 9px;
+      display: grid;
+      gap: 7px;
+    }
+
+    .children.drag-over {
+      outline: 2px solid var(--green);
+      outline-offset: -4px;
+      background: var(--green-soft);
+    }
+
+    .empty-container {
+      min-height: 48px;
+      display: grid;
+      place-items: center;
+      color: #969b98;
+      font-size: 12px;
+      border: 1px dashed #cfcfca;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, .56);
+    }
+
+    .node {
+      min-width: 0;
+      border: 1px solid #dde1dc;
+      border-radius: 7px;
+      background: var(--paper);
+      scroll-margin-top: 110px;
+      box-shadow: 0 1px 0 rgba(31, 38, 35, .03);
+    }
+
+    .node.flash, .compact-item.flash { animation: flash 1.2s ease; }
+    @keyframes flash {
+      0%, 100% { box-shadow: none; }
+      30% { box-shadow: 0 0 0 4px rgba(163, 79, 67, .24); border-color: var(--coral); }
+    }
+
+    .node-row {
+      min-height: 43px;
+      padding: 6px 7px 6px 10px;
+      display: grid;
+      grid-template-columns: 22px 22px minmax(0, 1fr) auto;
+      gap: 7px;
+      align-items: center;
+    }
+
+    .drag-handle {
+      width: 22px;
+      color: #a6ada9;
+      cursor: grab;
+      user-select: none;
+      text-align: center;
+      font-size: 17px;
+    }
+
+    .drag-handle:active { cursor: grabbing; }
+    .packed-toggle { width: 17px; height: 17px; margin: 0; accent-color: var(--green); cursor: pointer; }
+    .bag-spacer { width: 18px; height: 18px; }
+    .node-name { min-width: 0; font-size: 14px; line-height: 1.35; overflow-wrap: anywhere; }
+    .node-name small { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; }
+
+    .node.item[data-kind="personal"] { border-left: 4px solid var(--coral); }
+    .node.item[data-kind="care"] { border-left: 4px solid var(--blue); }
+    .node.item[data-kind="clothes"] { border-left: 4px solid var(--amber); }
+    .node.item[data-kind="other"] { border-left: 4px solid var(--green); }
+
+    .bag > .node-row { background: #ffffff; }
+    .bag > .children { border-top: 1px solid #ecefeb; background: #f6f8f6; }
+    .bag > .children[hidden] { display: none; }
+    .bag-label { color: var(--green); font-size: 11px; font-weight: 700; }
+
+    .children.compact {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      gap: 7px;
+    }
+
+    .children.compact[hidden] { display: none; }
+
+    .compact-item {
+      max-width: 100%;
+      min-height: 31px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 5px 3px 7px;
+      border: 1px solid #d7d9d5;
+      border-left-width: 3px;
+      border-radius: 7px;
+      background: #fff;
+      scroll-margin-top: 110px;
+      box-shadow: 0 1px 0 rgba(31, 38, 35, .03);
+    }
+
+    .compact-item[data-kind="personal"] { border-left-color: var(--coral); }
+    .compact-item[data-kind="care"] { border-left-color: var(--blue); }
+    .compact-item[data-kind="clothes"] { border-left-color: var(--amber); }
+    .compact-item[data-kind="other"] { border-left-color: var(--green); }
+    .compact-item .drag-handle { width: 16px; font-size: 14px; }
+    .compact-item .packed-toggle { width: 15px; height: 15px; }
+    .compact-name { min-width: 0; max-width: 260px; font-size: 12px; line-height: 1.3; overflow-wrap: anywhere; }
+    .compact-item .icon-actions { gap: 2px; }
+    .compact-item .icon-btn { width: 24px; height: 24px; font-size: 13px; }
+
+    .transport-badge {
+      flex: 0 0 auto;
+      padding: 2px 5px;
+      border-radius: 5px;
+      background: var(--blue-soft);
+      color: var(--blue);
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .transport-badge.alert { background: var(--coral-soft); color: var(--coral); }
+    .item-packed .node-name, .compact-item.item-packed .compact-name { color: #52615c; }
+    .item-packed { background: #fbfdfb; }
+    .print-title { display: none; }
+
+    .dragging { opacity: .42; }
+
+    dialog {
+      width: min(460px, calc(100% - 28px));
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0;
+      color: var(--ink);
+      box-shadow: 0 22px 70px rgba(20, 23, 21, .24);
+    }
+
+    dialog::backdrop { background: rgba(28, 30, 29, .38); }
+    .dialog-head { padding: 15px 16px; border-bottom: 1px solid var(--line); }
+    .dialog-head h3 { margin: 0; font-size: 18px; letter-spacing: 0; }
+    .dialog-body { padding: 16px; display: grid; gap: 13px; }
+    .field { display: grid; gap: 6px; }
+    .field label { font-size: 13px; font-weight: 650; }
+    .field input, .field select {
+      width: 100%;
+      height: 42px;
+      border: 1px solid #bfc3c0;
+      border-radius: 7px;
+      padding: 0 10px;
+      background: #fff;
+    }
+
+    .field textarea {
+      width: 100%;
+      min-height: 300px;
+      resize: vertical;
+      border: 1px solid #bfc3c0;
+      border-radius: 7px;
+      padding: 10px;
+      background: #fff;
+      font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    .import-summary { margin: 0; color: var(--muted); font-size: 13px; }
+
+    .dialog-actions {
+      padding: 12px 16px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+      border-top: 1px solid var(--line);
+      background: #fafaf8;
+    }
+
+    .dialog-actions button { min-width: 78px; height: 38px; }
+    .dialog-actions .primary { border-color: var(--green); background: var(--green); color: #fff; }
+    .dialog-actions .danger { border-color: var(--coral); color: var(--coral); }
+
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 50;
+      max-width: min(380px, calc(100% - 36px));
+      padding: 11px 14px;
+      border-radius: 7px;
+      background: #202421;
+      color: #fff;
+      font-size: 13px;
+      box-shadow: 0 12px 34px rgba(0, 0, 0, .22);
+    }
+
+    .toast[hidden] { display: none; }
+
+    @media (max-width: 900px) {
+      .header-inner { grid-template-columns: 1fr auto; padding: 12px 0; }
+      .title-block { grid-column: 1 / 2; }
+      .search-wrap { grid-column: 1 / -1; grid-row: 2; }
+      .header-actions { grid-column: 2; grid-row: 1; }
+      .trip-strip { grid-row: 3; }
+      .layout { grid-template-columns: 1fr; padding-top: 12px; }
+      .sidebar { position: static; display: grid; grid-template-columns: 180px 1fr; }
+      .summary { border-bottom: 0; border-right: 1px solid var(--line); }
+      .jump-list { display: flex; gap: 4px; overflow-x: auto; }
+      .jump-list button { width: auto; min-width: max-content; }
+    }
+
+    @media (max-width: 660px) {
+      .header-inner, .layout { width: min(100% - 18px, 1380px); }
+      .title-block p { display: none; }
+      .title-block h1 { font-size: 19px; }
+      .compartment-grid { grid-template-columns: 1fr; padding: 8px; gap: 8px; }
+      .sidebar { grid-template-columns: 1fr; }
+      .summary { border-right: 0; border-bottom: 1px solid var(--line); }
+      .jump-list { padding: 6px; }
+      .header-actions { gap: 4px; }
+      .header-actions button { width: 34px; height: 34px; font-size: 17px; }
+      .node-row { grid-template-columns: 22px 22px minmax(0, 1fr) auto; }
+      .compact-name { max-width: 190px; }
+      .wizard-grid { grid-template-columns: 1fr; }
+    }
+
+    @media print {
+      @page { size: A4; margin: 12mm; }
+      body { background: #fff; font-size: 10pt; }
+      .app-header, .sidebar, .icon-actions, .drag-handle, .toast, dialog, .safety-panel { display: none !important; }
+      .layout { width: 100%; display: block; padding: 0; }
+      .board { width: 100%; }
+      .print-title { display: block; margin: 0 0 8mm; font-size: 20pt; letter-spacing: 0; }
+      .luggage { box-shadow: none; break-before: auto; break-inside: auto; margin: 0 0 8mm; }
+      .compartment-grid { grid-template-columns: 1fr; gap: 5mm; padding: 5mm; }
+      .compartment { break-inside: auto; }
+      .bag, .node { break-inside: avoid; }
+      .node-row { grid-template-columns: 18px minmax(0, 1fr); }
+      .node-name { font-size: 9.5pt; overflow-wrap: normal; word-break: normal; }
+      .compact-name { max-width: none; word-break: normal; }
+      .children[hidden] { display: grid !important; }
+      .children.compact[hidden] { display: flex !important; }
+      .packed-toggle { appearance: none; border: 1px solid #777; border-radius: 2px; }
+      .packed-toggle:checked::after { content: "✓"; display: block; font-size: 11px; line-height: 14px; text-align: center; }
+      .compact-item { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="title-block">
+        <h1>PackMap</h1>
+        <p id="saveStatus">本地自动保存</p>
+      </div>
+
+      <div class="search-wrap">
+        <div class="search-row">
+          <span class="search-icon" aria-hidden="true">⌕</span>
+          <input id="searchInput" type="search" placeholder="搜索物品、收纳包或箱子" autocomplete="off">
+          <button id="clearSearch" title="清空搜索" aria-label="清空搜索">×</button>
+        </div>
+        <div id="searchResults" class="search-results" hidden></div>
+      </div>
+
+      <div class="header-actions">
+        <button id="newTrip" title="新建旅行规划" aria-label="新建旅行规划">旅</button>
+        <button id="exportData" title="导出当前记录" aria-label="导出当前记录">⇩</button>
+        <button id="collapseAll" title="一键折叠或展开全部收纳包" aria-label="一键折叠或展开全部收纳包">▤</button>
+        <button id="addLuggage" title="新增箱子或区域" aria-label="新增箱子或区域">＋</button>
+        <button id="resetData" title="恢复初始记录" aria-label="恢复初始记录">↺</button>
+      </div>
+
+      <section class="trip-strip" aria-label="当前旅行">
+        <div>
+          <strong id="tripTitle">六个月多城市学习旅行</strong>
+          <span id="tripMeta">东亚出发 · 欧洲多城市 · 1人 · 留学/交换</span>
+        </div>
+        <button id="editTrip" type="button">编辑旅行</button>
+      </section>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="sidebar">
+      <section class="progress-panel">
+        <strong>总装入进度 <span id="totalProgressText">0%</span></strong>
+        <div class="progress-track" aria-hidden="true"><div id="totalProgressFill" class="progress-fill"></div></div>
+      </section>
+      <div class="summary">
+        <div class="metric"><strong id="itemCount">0</strong><span>件物品</span></div>
+        <div class="metric"><strong id="bagCount">0</strong><span>个收纳包</span></div>
+        <div class="metric"><strong id="packedCount">0</strong><span>已装入</span></div>
+        <div class="metric"><strong id="alertCount">0</strong><span>位置提醒</span></div>
+      </div>
+      <nav id="jumpList" class="jump-list" aria-label="行李目录"></nav>
+    </aside>
+
+    <div id="board" class="board"></div>
+  </main>
+
+  <dialog id="editDialog">
+    <form id="editForm" method="dialog">
+      <div class="dialog-head"><h3 id="dialogTitle">新增</h3></div>
+      <div class="dialog-body">
+        <div class="field" id="typeField">
+          <label for="nodeType">类型</label>
+          <select id="nodeType">
+            <option value="item">物品</option>
+            <option value="bag">收纳包</option>
+            <option value="compartment">分区 / 箱面</option>
+            <option value="luggage">箱子 / 区域</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="nodeName">名称</label>
+          <input id="nodeName" maxlength="80" required>
+        </div>
+        <div class="field" id="kindField">
+          <label for="nodeKind">分类</label>
+          <select id="nodeKind">
+            <option value="other">其他</option>
+            <option value="clothes">衣物</option>
+            <option value="care">洗护 / 药品</option>
+            <option value="personal">随身 / 贵重</option>
+          </select>
+        </div>
+        <div class="field" id="packedField">
+          <label for="nodePacked">装入状态</label>
+          <select id="nodePacked">
+            <option value="true">已装入</option>
+            <option value="false">未装入</option>
+          </select>
+        </div>
+        <div class="field" id="transportField">
+          <label for="nodeTransport">运输要求</label>
+          <select id="nodeTransport">
+            <option value="">无特别要求</option>
+            <option value="carry-on">必须随身</option>
+            <option value="checked">必须托运</option>
+          </select>
+        </div>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" data-close="editDialog">取消</button>
+        <button class="primary" type="submit">保存</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="moveDialog">
+    <form id="moveForm" method="dialog">
+      <div class="dialog-head"><h3>移动位置</h3></div>
+      <div class="dialog-body">
+        <div class="field">
+          <label for="moveTarget">移动到</label>
+          <select id="moveTarget"></select>
+        </div>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" data-close="moveDialog">取消</button>
+        <button class="primary" type="submit">移动</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="deleteDialog">
+    <form id="deleteForm" method="dialog">
+      <div class="dialog-head"><h3>删除记录</h3></div>
+      <div class="dialog-body"><p id="deleteMessage"></p></div>
+      <div class="dialog-actions">
+        <button type="button" data-close="deleteDialog">取消</button>
+        <button class="danger" type="submit">删除</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="exportDialog">
+    <div class="dialog-head"><h3>数据与打印</h3></div>
+    <div class="dialog-body">
+      <p>复制或导出当前记录，也可以从同格式文字恢复。</p>
+    </div>
+    <div class="dialog-actions">
+      <button type="button" data-close="exportDialog">取消</button>
+      <button type="button" id="openImport">导入文字</button>
+      <button type="button" id="printExport">打印模式</button>
+      <button type="button" id="downloadExport">导出TXT</button>
+      <button type="button" class="primary" id="copyExport">复制文字</button>
+    </div>
+  </dialog>
+
+  <dialog id="tripDialog">
+    <form id="tripForm" method="dialog">
+      <div class="dialog-head"><h3>新建旅行</h3></div>
+      <div class="dialog-body">
+        <div class="wizard-grid">
+          <div class="field">
+            <label for="tripName">旅行名称</label>
+            <input id="tripName" maxlength="80" value="我的旅行">
+          </div>
+          <div class="field">
+            <label for="travelerCount">人数</label>
+            <input id="travelerCount" type="number" min="1" max="12" value="1">
+          </div>
+          <div class="field">
+            <label for="originCity">出发地</label>
+            <input id="originCity" maxlength="60" placeholder="例如：出发城市">
+          </div>
+          <div class="field">
+            <label for="destinations">目的地</label>
+            <input id="destinations" maxlength="120" placeholder="法国、意大利、英国">
+          </div>
+          <div class="field">
+            <label for="startDate">出发日期</label>
+            <input id="startDate" type="date">
+          </div>
+          <div class="field">
+            <label for="endDate">返回日期</label>
+            <input id="endDate" type="date">
+          </div>
+          <div class="field">
+            <label for="tripType">旅行类型</label>
+            <select id="tripType">
+              <option value="study">留学 / 交换</option>
+              <option value="leisure">旅行 / 度假</option>
+              <option value="business">出差 / 正式场合</option>
+              <option value="outdoor">户外 / 徒步</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="laundryFrequency">洗衣频率</label>
+            <select id="laundryFrequency">
+              <option value="weekly">每周一次</option>
+              <option value="often">经常可洗</option>
+              <option value="rare">不方便洗</option>
+            </select>
+          </div>
+          <div class="field full">
+            <label for="specialNeeds">特殊需求</label>
+            <textarea id="specialNeeds" class="plain-textarea" placeholder="例如：化妆、痘痘肌、OK镜、防晒、痛经、拍照、徒步、正式开学典礼"></textarea>
+          </div>
+          <div class="field full">
+            <label for="bagSetup">箱包和收纳袋</label>
+            <textarea id="bagSetup" class="plain-textarea" placeholder="每行一个，例如：&#10;托运行李 A：开放面、袋子面&#10;托运行李 B：开放面、袋子面&#10;随身双肩包：主仓、前袋、外袋"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" data-close="tripDialog">取消</button>
+        <button class="primary" type="submit">生成基础清单</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="recommendDialog">
+    <form id="recommendForm" method="dialog">
+      <div class="dialog-head"><h3>筛选基础行李清单</h3></div>
+      <div class="dialog-body">
+        <p class="import-summary">保留需要的项目，生成后仍可继续新增、删除和拖动位置。</p>
+        <div id="recommendPreview" class="checklist-preview"></div>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" data-close="recommendDialog">取消</button>
+        <button class="primary" type="submit">创建行李地图</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="importDialog">
+    <form id="importForm" method="dialog">
+      <div class="dialog-head"><h3>导入文字记录</h3></div>
+      <div class="dialog-body">
+        <div class="field">
+          <label for="importText">粘贴完整记录</label>
+          <textarea id="importText" placeholder="PackMap 行李位置地图&#10;导出时间：...&#10;&#10;托运行李 A&#10;  开放面&#10;    [已装] 晴雨伞"></textarea>
+        </div>
+        <p class="import-summary" id="importSummary">等待粘贴</p>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" data-close="importDialog">取消</button>
+        <button type="submit" class="primary" id="confirmImport" disabled>导入并替换</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script>
+    const STORAGE_KEY = "packmap-public-organizer-v1";
+    const COLLAPSE_KEY = "packmap-public-organizer-collapsed-v1";
+    const IMPORT_BACKUP_KEY = "packmap-public-organizer-before-import-v1";
+    const TRIP_KEY = "packmap-public-organizer-trip-v1";
+    const CHECK_KEY = "packmap-public-organizer-departure-v1";
+    const node = (id, type, name, children = [], kind = "other") => ({ id, type, name, kind, children });
+    const item = (id, name, kind = "other") => ({
+      ...node(id, "item", name, [], kind),
+      packed: true,
+      transport: defaultTransport(id, name)
+    });
+    const bag = (id, name, children = []) => node(id, "bag", name, children);
+
+    function defaultTransport(id, name) {
+      if (id === "swiss-knife" || /瑞士军刀|折叠刀|剪刀/.test(name)) return "checked";
+      if (id === "ok-lens" || /护照|签证|充电宝|备用锂电池|手机|电脑|平板|MacBook|iPad|相机|首饰|OK镜/.test(name)) return "carry-on";
+      return "";
+    }
+
+    const initialData = [
+      node("checked-a", "luggage", "托运行李 A - 第一阶段", [
+        node("checked-a-open", "compartment", "开放面 - 夏季常用", [
+          bag("summer-cube", "夏季衣物包", [
+            { ...item("short-tops", "短袖 7件", "clothes"), packed: false },
+            { ...item("light-layers", "薄长袖 2件", "clothes"), packed: false },
+            { ...item("summer-bottoms", "夏季下装 4件", "clothes"), packed: false },
+            { ...item("swimwear", "泳衣 1套", "clothes"), packed: false }
+          ]),
+          bag("split-basics-a", "分散基础衣物 A", [
+            { ...item("underwear-a", "内衣裤 5套", "clothes"), packed: false },
+            { ...item("socks-a", "袜子 5双", "clothes"), packed: false },
+            { ...item("sleepwear", "睡衣 1套", "clothes"), packed: false }
+          ]),
+          { ...item("daily-shoes", "舒适通勤鞋 1双", "clothes"), packed: false }
+        ]),
+        node("checked-a-zip", "compartment", "袋子面 - 洗护与生活", [
+          bag("toiletries", "防漏洗护包", [
+            { ...item("shampoo", "洗发水与护发素", "care"), packed: false },
+            { ...item("skincare", "基础护肤与防晒", "care"), packed: false },
+            { ...item("laundry", "前两次洗衣用品", "care"), packed: false }
+          ]),
+          { ...item("slippers", "拖鞋 1双", "clothes"), packed: false },
+          { ...item("foldable-tote", "折叠购物袋 1个"), packed: false }
+        ])
+      ]),
+      node("checked-b", "luggage", "托运行李 B - 后续阶段", [
+        node("checked-b-open", "compartment", "开放面 - 冷天气模块", [
+          bag("cold-cube", "冷天气衣物包（后期开启）", [
+            { ...item("thermals", "保暖内衣 2套", "clothes"), packed: false },
+            { ...item("midlayer", "保暖中间层 1件", "clothes"), packed: false },
+            { ...item("rain-shell", "防水冲锋衣 1件", "clothes"), packed: false },
+            { ...item("warm-jacket", "轻量保暖外套 1件", "clothes"), packed: false },
+            { ...item("warm-socks", "厚袜 3双", "clothes"), packed: false }
+          ]),
+          bag("split-basics-b", "分散基础衣物 B", [
+            { ...item("underwear-b", "内衣裤 5套", "clothes"), packed: false },
+            { ...item("socks-b", "袜子 5双", "clothes"), packed: false }
+          ])
+        ]),
+        node("checked-b-zip", "compartment", "袋子面 - 正式与户外", [
+          bag("formal-bag", "正式场合衣物包", [
+            { ...item("formal-outfit", "适合拍照的正式穿搭 1套", "clothes"), packed: false }
+          ]),
+          { ...item("hiking-shoes", "徒步鞋 1双", "clothes"), packed: false },
+          item("shopping-space", "预留至少 20% 空间")
+        ])
+      ]),
+      node("backpack", "luggage", "25L随身双肩包", [
+        node("backpack-main", "compartment", "主仓", [
+          bag("document-wallet", "证件袋", [
+            { ...item("passport", "护照与签证", "personal"), packed: false },
+            { ...item("document-copies", "文件复印件与离线截图", "personal"), packed: false },
+            { ...item("wallet", "钱包、银行卡与少量现金", "personal"), packed: false }
+          ]),
+          bag("electronics", "电子用品包", [
+            { ...item("devices", "手机、电脑与平板", "personal"), packed: false },
+            { ...item("chargers", "充电头与充电线", "personal"), packed: false },
+            { ...item("power-bank", "充电宝", "personal"), packed: false },
+            { ...item("adapter", "旅行转换插头"), packed: false }
+          ]),
+          bag("delay-kit", "延误与首夜包", [
+            { ...item("change-clothes", "轻便换洗衣物 1套", "clothes"), packed: false },
+            { ...item("travel-toiletries", "旅行装基础洗漱", "care"), packed: false },
+            { ...item("essential-meds", "个人必需药物 3天量", "care"), packed: false },
+            { ...item("glasses", "眼镜或必要视力用品", "personal"), packed: false }
+          ])
+        ]),
+        node("backpack-front", "compartment", "前袋 - 机场随取", [
+          { ...item("boarding-pass", "登机牌或离线值机截图", "personal"), packed: false },
+          { ...item("comfort-kit", "纸巾、唇膏、护手霜与口罩"), packed: false },
+          { ...item("water-bottle", "空水杯"), packed: false }
+        ])
+      ]),
+      node("staging", "luggage", "待决定", [
+        node("staging-buy", "compartment", "到达后购买", [
+          { ...item("bulk-detergent", "大包装洗衣液", "care"), packed: false },
+          { ...item("household", "住宿生活消耗品"), packed: false }
+        ]),
+        node("staging-unplaced", "compartment", "可选或尚未归位", [
+          { ...item("hair-tool", "电压兼容的美发工具", "care"), packed: false },
+          { ...item("dressy-shoes", "额外正式鞋", "clothes"), packed: false }
+        ])
+      ])
+    ];
+
+    let data = loadData();
+    const collapsedBags = loadCollapsedBags();
+    let editMode = null;
+    let editId = null;
+    let parentId = null;
+    let movingId = null;
+    let deletingId = null;
+    let draggedId = null;
+    let trip = loadTrip();
+    let departureChecks = loadDepartureChecks();
+    let recommendedItems = [];
+
+    const board = document.getElementById("board");
+    const jumpList = document.getElementById("jumpList");
+    const searchInput = document.getElementById("searchInput");
+    const searchResults = document.getElementById("searchResults");
+    const editDialog = document.getElementById("editDialog");
+    const moveDialog = document.getElementById("moveDialog");
+    const deleteDialog = document.getElementById("deleteDialog");
+    const importDialog = document.getElementById("importDialog");
+    const tripDialog = document.getElementById("tripDialog");
+    const recommendDialog = document.getElementById("recommendDialog");
+    const editForm = document.getElementById("editForm");
+    const moveForm = document.getElementById("moveForm");
+    const deleteForm = document.getElementById("deleteForm");
+    const importForm = document.getElementById("importForm");
+    const tripForm = document.getElementById("tripForm");
+    const recommendForm = document.getElementById("recommendForm");
+    const importText = document.getElementById("importText");
+    let parsedImport = null;
+
+    function cloneInitial() {
+      return JSON.parse(JSON.stringify(initialData));
+    }
+
+    function loadData() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        return normalizeData(saved ? JSON.parse(saved) : cloneInitial());
+      } catch {
+        return normalizeData(cloneInitial());
+      }
+    }
+
+    function normalizeData(entries) {
+      entries.forEach((root) => {
+        const visit = (entry) => {
+          if (entry.type === "item") {
+            if (typeof entry.packed !== "boolean") entry.packed = root.id !== "staging";
+            if (typeof entry.transport !== "string") entry.transport = defaultTransport(entry.id, entry.name);
+          }
+          (entry.children || []).forEach(visit);
+        };
+        visit(root);
+      });
+      return entries;
+    }
+
+    function loadCollapsedBags() {
+      try {
+        return new Set(JSON.parse(localStorage.getItem(COLLAPSE_KEY) || "[]"));
+      } catch {
+        return new Set();
+      }
+    }
+
+    function defaultTrip() {
+      return {
+        name: "六个月多城市学习旅行",
+        origin: "东亚",
+        destinations: "夏校城市、铁路旅行基地、交换城市、冬季目的地",
+        startDate: "2026-07-01",
+        endDate: "2026-12-22",
+        travelers: 1,
+        type: "study",
+        laundry: "weekly",
+        specialNeeds: "每周洗衣、学生休闲穿搭、拍照、徒步、一个正式活动、预留购物空间",
+        bagSetup: "托运行李 A：开放面、袋子面\n托运行李 B：开放面、袋子面\n25L随身双肩包：主仓、前袋\n待决定：到达后购买、可选或尚未归位"
+      };
+    }
+
+    function loadTrip() {
+      try {
+        return { ...defaultTrip(), ...JSON.parse(localStorage.getItem(TRIP_KEY) || "{}") };
+      } catch {
+        return defaultTrip();
+      }
+    }
+
+    function saveTrip() {
+      localStorage.setItem(TRIP_KEY, JSON.stringify(trip));
+    }
+
+    function loadDepartureChecks() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(CHECK_KEY) || "{}");
+        return typeof saved === "object" && saved ? saved : {};
+      } catch {
+        return {};
+      }
+    }
+
+    function saveDepartureChecks() {
+      localStorage.setItem(CHECK_KEY, JSON.stringify(departureChecks));
+    }
+
+    function saveCollapsedBags() {
+      localStorage.setItem(COLLAPSE_KEY, JSON.stringify([...collapsedBags]));
+    }
+
+    function saveData(message = "已保存") {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      const status = document.getElementById("saveStatus");
+      status.textContent = message;
+      clearTimeout(saveData.timer);
+      saveData.timer = setTimeout(() => { status.textContent = "本地自动保存"; }, 1400);
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function uid(prefix) {
+      return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+    }
+
+    function walk(nodes, callback, path = []) {
+      nodes.forEach((entry) => {
+        const currentPath = [...path, entry];
+        callback(entry, currentPath);
+        if (entry.children?.length) walk(entry.children, callback, currentPath);
+      });
+    }
+
+    function findWithParent(id, nodes = data, parent = null) {
+      for (const entry of nodes) {
+        if (entry.id === id) return { entry, parent, list: nodes };
+        const found = findWithParent(id, entry.children || [], entry);
+        if (found) return found;
+      }
+      return null;
+    }
+
+    function countItems(entry) {
+      let count = entry.type === "item" ? 1 : 0;
+      (entry.children || []).forEach((child) => { count += countItems(child); });
+      return count;
+    }
+
+    function countPacked(entry) {
+      let count = entry.type === "item" && entry.packed ? 1 : 0;
+      (entry.children || []).forEach((child) => { count += countPacked(child); });
+      return count;
+    }
+
+    function percent(part, whole) {
+      if (!whole) return 0;
+      return Math.round((part / whole) * 100);
+    }
+
+    function countType(type) {
+      let count = 0;
+      walk(data, (entry) => { if (entry.type === type) count += 1; });
+      return count;
+    }
+
+    function transportState(entry, path = findPath(entry.id)) {
+      if (entry.type !== "item" || !entry.transport) return null;
+      const rootId = path[0]?.id;
+      const required = entry.transport === "carry-on" ? "随身" : "托运";
+      let alert = false;
+      if (rootId !== "staging") {
+        if (entry.transport === "carry-on") alert = rootId !== "backpack";
+        if (entry.transport === "checked") alert = rootId === "backpack";
+      }
+      return { required, alert };
+    }
+
+    function daysBetween(start, end) {
+      const startTime = Date.parse(start);
+      const endTime = Date.parse(end);
+      if (Number.isNaN(startTime) || Number.isNaN(endTime) || endTime < startTime) return 7;
+      return Math.max(1, Math.ceil((endTime - startTime) / 86400000) + 1);
+    }
+
+    function typeLabel(value) {
+      return ({ study: "留学/交换", leisure: "旅行/度假", business: "出差/正式", outdoor: "户外/徒步" })[value] || "旅行";
+    }
+
+    function updateTripHeader() {
+      document.getElementById("tripTitle").textContent = trip.name || "未命名旅行";
+      const parts = [
+        trip.origin ? `${trip.origin}出发` : "",
+        trip.destinations || "",
+        `${trip.travelers || 1}人`,
+        typeLabel(trip.type)
+      ].filter(Boolean);
+      document.getElementById("tripMeta").textContent = parts.join(" · ");
+    }
+
+    function departureChecklist() {
+      return [
+        { id: "passport", name: "护照" },
+        { id: "visa-copy", name: "签证/护照复印件" },
+        { id: "boarding-pass", name: "登机牌/值机截图" },
+        { id: "hotel-address", name: "住宿地址离线截图" },
+        { id: "emergency", name: "紧急联系人离线截图" },
+        { id: "phone", name: "手机" },
+        { id: "charger", name: "充电头" },
+        { id: "power-bank", name: "充电宝随身" },
+        { id: "phone-cable", name: "手机充电线" },
+        { id: "wallet", name: "钱包/银行卡" },
+        { id: "keys", name: "家门钥匙" },
+        { id: "luggage-locks", name: "两只箱子锁好" },
+        { id: "luggage-tags", name: "行李牌/联系方式" },
+        { id: "weight", name: "托运行李称重留余量" },
+        { id: "home-check", name: "门窗水电垃圾" }
+      ];
+    }
+
+    function renderDeparturePanel() {
+      const checks = departureChecklist();
+      return `
+        <section class="departure-panel">
+          <header>
+            <h2>出发前检查</h2>
+            <button type="button" id="clearDepartureChecks">清空勾选</button>
+          </header>
+          <div class="departure-list">
+            ${checks.map((check) => `
+              <label class="departure-check">
+                <input type="checkbox" data-check-id="${check.id}" ${departureChecks[check.id] ? "checked" : ""}>
+                <span>${escapeHtml(check.name)}</span>
+              </label>
+            `).join("")}
+          </div>
+        </section>
+      `;
+    }
+
+    function getSafetyAlerts() {
+      const alerts = [];
+      walk(data, (entry, path) => {
+        const state = transportState(entry, path);
+        if (state?.alert) alerts.push({ entry, state });
+      });
+      return alerts;
+    }
+
+    function renderSafetyPanel(alerts) {
+      if (!alerts.length) return "";
+      const buttons = alerts.slice(0, 6).map(({ entry, state }) =>
+        `<button type="button" data-safety-id="${entry.id}">${escapeHtml(entry.name)}应${state.required}</button>`
+      ).join("；");
+      return `<div class="safety-panel"><strong>位置提醒 ${alerts.length}</strong><span>${buttons}</span></div>`;
+    }
+
+    function render() {
+      const alerts = getSafetyAlerts();
+      updateTripHeader();
+      board.innerHTML = '<h1 class="print-title">PackMap 行李位置地图</h1>' + renderDeparturePanel() + renderSafetyPanel(alerts) + data.map(renderLuggage).join("");
+      jumpList.innerHTML = data.map((entry) => `
+        <button type="button" data-jump="${entry.id}">
+          <span>${escapeHtml(entry.name)}</span><small>${countPacked(entry)}/${countItems(entry)}</small>
+        </button>
+      `).join("");
+      document.getElementById("itemCount").textContent = countType("item");
+      document.getElementById("bagCount").textContent = countType("bag");
+      let packed = 0;
+      data.forEach((entry) => { packed += countPacked(entry); });
+      const total = countType("item");
+      document.getElementById("packedCount").textContent = packed;
+      document.getElementById("alertCount").textContent = alerts.length;
+      document.getElementById("totalProgressText").textContent = `${percent(packed, total)}%`;
+      document.getElementById("totalProgressFill").style.width = `${percent(packed, total)}%`;
+      bindBoardEvents();
+      bindDepartureEvents();
+      updateSearch();
+    }
+
+    function renderLuggage(entry) {
+      const packed = countPacked(entry);
+      const total = countItems(entry);
+      const progress = percent(packed, total);
+      return `
+        <section class="luggage" id="view-${entry.id}" data-node-id="${entry.id}">
+          <div class="luggage-head">
+            <div><h2>${escapeHtml(entry.name)}</h2><p>${entry.type === "luggage" ? "行李容器" : "临时区域"}</p></div>
+            <div class="luggage-meta">
+              <div class="icon-actions">
+                <span class="count-badge">${packed}/${total}已装</span>
+                <button class="icon-btn add-child" data-id="${entry.id}" title="新增分区" aria-label="新增分区">＋</button>
+                <button class="icon-btn rename-node" data-id="${entry.id}" title="重命名" aria-label="重命名">✎</button>
+              </div>
+              <div class="luggage-progress" aria-hidden="true"><span style="width:${progress}%"></span></div>
+            </div>
+          </div>
+          <div class="compartment-grid">
+            ${(entry.children || []).map(renderCompartment).join("") || '<div class="empty-container">暂无分区</div>'}
+          </div>
+        </section>
+      `;
+    }
+
+    function renderCompartment(entry) {
+      return `
+        <section class="compartment" id="view-${entry.id}" data-node-id="${entry.id}">
+          <div class="container-head">
+            <div class="container-title"><strong>${escapeHtml(entry.name)}</strong><small>${countPacked(entry)}/${countItems(entry)}已装</small></div>
+            <div class="icon-actions">
+              <button class="icon-btn add-child" data-id="${entry.id}" title="新增物品或收纳包" aria-label="新增">＋</button>
+              <button class="icon-btn rename-node" data-id="${entry.id}" title="重命名" aria-label="重命名">✎</button>
+              <button class="icon-btn delete-node" data-id="${entry.id}" title="删除" aria-label="删除">×</button>
+            </div>
+          </div>
+          ${renderChildren(entry)}
+        </section>
+      `;
+    }
+
+    function renderChildren(entry, hidden = false, compact = false) {
+      const children = entry.children || [];
+      return `
+        <div class="children ${compact ? "compact" : ""}" data-drop-id="${entry.id}" ${hidden ? "hidden" : ""}>
+          ${children.length ? children.map((child) => compact && child.type === "item" ? renderCompactItem(child) : renderNode(child)).join("") : '<div class="empty-container">空</div>'}
+        </div>
+      `;
+    }
+
+    function renderTransportBadge(entry) {
+      const state = transportState(entry);
+      if (!state) return "";
+      const label = state.alert ? `应${state.required}` : state.required;
+      return `<span class="transport-badge ${state.alert ? "alert" : ""}" title="${state.alert ? "当前位置不符合运输要求" : "运输要求"}">${label}</span>`;
+    }
+
+    function renderCompactItem(entry) {
+      return `
+        <article class="compact-item ${entry.packed ? "item-packed" : ""}" id="view-${entry.id}"
+          data-node-id="${entry.id}" data-kind="${entry.kind || "other"}" draggable="true">
+          <span class="drag-handle" title="拖动" aria-hidden="true">⠿</span>
+          <input class="packed-toggle" data-id="${entry.id}" type="checkbox" ${entry.packed ? "checked" : ""} title="已装入" aria-label="${escapeHtml(entry.name)}已装入">
+          <span class="compact-name">${escapeHtml(entry.name)}</span>
+          ${renderTransportBadge(entry)}
+          <span class="icon-actions">
+            <button class="icon-btn move-node" data-id="${entry.id}" title="移动" aria-label="移动">↗</button>
+            <button class="icon-btn rename-node" data-id="${entry.id}" title="编辑" aria-label="编辑">✎</button>
+            <button class="icon-btn delete-node" data-id="${entry.id}" title="删除" aria-label="删除">×</button>
+          </span>
+        </article>
+      `;
+    }
+
+    function renderNode(entry) {
+      const isBag = entry.type === "bag";
+      const isCollapsed = isBag && collapsedBags.has(entry.id);
+      return `
+        <article class="node ${isBag ? "bag" : "item"} ${entry.packed ? "item-packed" : ""}" id="view-${entry.id}"
+          data-node-id="${entry.id}" data-kind="${entry.kind || "other"}" draggable="true">
+          <div class="node-row">
+            <span class="drag-handle" title="拖动" aria-hidden="true">⠿</span>
+            ${isBag ? '<span class="bag-spacer"></span>' : `<input class="packed-toggle" data-id="${entry.id}" type="checkbox" ${entry.packed ? "checked" : ""} title="已装入" aria-label="${escapeHtml(entry.name)}已装入">`}
+            <div class="node-name">
+              ${escapeHtml(entry.name)}
+              ${isBag ? `<small class="bag-label">收纳包 · ${countPacked(entry)}/${countItems(entry)}已装</small>` : ""}
+              ${!isBag ? renderTransportBadge(entry) : ""}
+            </div>
+            <div class="icon-actions">
+              ${isBag ? `<button class="icon-btn toggle-bag" data-id="${entry.id}" title="${isCollapsed ? "展开" : "折叠"}" aria-label="${isCollapsed ? "展开" : "折叠"}" aria-expanded="${!isCollapsed}">${isCollapsed ? "▸" : "▾"}</button>` : ""}
+              ${isBag ? `<button class="icon-btn add-child" data-id="${entry.id}" title="添加物品" aria-label="添加物品">＋</button>` : ""}
+              <button class="icon-btn move-node" data-id="${entry.id}" title="移动" aria-label="移动">↗</button>
+              <button class="icon-btn rename-node" data-id="${entry.id}" title="重命名" aria-label="重命名">✎</button>
+              <button class="icon-btn delete-node" data-id="${entry.id}" title="删除" aria-label="删除">×</button>
+            </div>
+          </div>
+          ${isBag ? renderChildren(entry, isCollapsed, true) : ""}
+        </article>
+      `;
+    }
+
+    function bindBoardEvents() {
+      board.querySelectorAll("[data-safety-id]").forEach((button) => {
+        button.addEventListener("click", () => focusNode(button.dataset.safetyId));
+      });
+      board.querySelectorAll(".packed-toggle").forEach((checkbox) => {
+        checkbox.addEventListener("change", () => {
+          const found = findWithParent(checkbox.dataset.id);
+          if (!found) return;
+          found.entry.packed = checkbox.checked;
+          saveData(checkbox.checked ? "已标记装入" : "已标记未装");
+          render();
+          focusNode(found.entry.id);
+        });
+      });
+      board.querySelectorAll(".toggle-bag").forEach((button) => button.addEventListener("click", () => {
+        const id = button.dataset.id;
+        if (collapsedBags.has(id)) collapsedBags.delete(id);
+        else collapsedBags.add(id);
+        saveCollapsedBags();
+        render();
+        focusNode(id);
+      }));
+      board.querySelectorAll(".add-child").forEach((button) => button.addEventListener("click", () => openAdd(button.dataset.id)));
+      board.querySelectorAll(".rename-node").forEach((button) => button.addEventListener("click", () => openRename(button.dataset.id)));
+      board.querySelectorAll(".move-node").forEach((button) => button.addEventListener("click", () => openMove(button.dataset.id)));
+      board.querySelectorAll(".delete-node").forEach((button) => button.addEventListener("click", () => openDelete(button.dataset.id)));
+
+      board.querySelectorAll("[draggable='true']").forEach((element) => {
+        element.addEventListener("dragstart", (event) => {
+          draggedId = element.dataset.nodeId;
+          element.classList.add("dragging");
+          event.dataTransfer.effectAllowed = "move";
+          event.dataTransfer.setData("text/plain", draggedId);
+        });
+        element.addEventListener("dragend", () => {
+          element.classList.remove("dragging");
+          board.querySelectorAll(".drag-over").forEach((drop) => drop.classList.remove("drag-over"));
+          draggedId = null;
+        });
+      });
+
+      board.querySelectorAll("[data-drop-id]").forEach((dropzone) => {
+        dropzone.addEventListener("dragover", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          dropzone.classList.add("drag-over");
+          event.dataTransfer.dropEffect = "move";
+        });
+        dropzone.addEventListener("dragleave", (event) => {
+          if (!dropzone.contains(event.relatedTarget)) dropzone.classList.remove("drag-over");
+        });
+        dropzone.addEventListener("drop", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          dropzone.classList.remove("drag-over");
+          const sourceId = event.dataTransfer.getData("text/plain") || draggedId;
+          moveEntry(sourceId, dropzone.dataset.dropId);
+        });
+      });
+    }
+
+    function bindDepartureEvents() {
+      board.querySelectorAll("[data-check-id]").forEach((checkbox) => {
+        checkbox.addEventListener("change", () => {
+          departureChecks[checkbox.dataset.checkId] = checkbox.checked;
+          saveDepartureChecks();
+        });
+      });
+      const clearButton = document.getElementById("clearDepartureChecks");
+      if (clearButton) clearButton.addEventListener("click", () => {
+        departureChecks = {};
+        saveDepartureChecks();
+        render();
+        showToast("出发检查已清空");
+      });
+    }
+
+    function baseRecommendationLibrary(tripInfo) {
+      const days = daysBetween(tripInfo.startDate, tripInfo.endDate);
+      const travelers = Math.max(1, Number(tripInfo.travelers) || 1);
+      const laundryFactor = tripInfo.laundry === "rare" ? 10 : tripInfo.laundry === "often" ? 5 : 7;
+      const clothesDays = Math.min(12, Math.max(4, laundryFactor));
+      const text = `${tripInfo.destinations} ${tripInfo.specialNeeds}`.toLocaleLowerCase("zh-CN");
+      const isCold = /英国|冰岛|北欧|冬|雪|寒|冷|爱丁堡/.test(text) || days > 45;
+      const needsPhoto = /拍照|化妆|全妆|漂亮|开学典礼|正式/.test(text) || tripInfo.type === "business";
+      const needsOutdoor = /徒步|登山|户外|冰岛/.test(text) || tripInfo.type === "outdoor";
+      const needsCare = /痘|干皮|防晒|过敏|ok镜|隐形|痛经|药/.test(text);
+
+      const groups = [
+        { name: "证件与钱卡", items: [
+          ["护照", "personal", "carry-on"], ["签证/录取/住宿文件电子版和纸质备份", "personal", "carry-on"],
+          ["银行卡和少量现金", "personal", "carry-on"], ["保险单和紧急联系人", "personal", "carry-on"],
+          ["学生证/校园卡", "personal", "carry-on"]
+        ] },
+        { name: "电子设备", items: [
+          ["手机", "personal", "carry-on"], ["电脑", "personal", "carry-on"], ["平板", "personal", "carry-on"],
+          ["充电头", "personal", "carry-on"], ["手机线/电脑线", "personal", "carry-on"],
+          ["充电宝", "personal", "carry-on"], ["转换插头", "other", "carry-on"], ["插线板", "other", ""]
+        ] },
+        { name: "衣物", items: [
+          [`短袖 ${clothesDays}件`, "clothes", ""], [`内裤 ${clothesDays + 2}条`, "clothes", ""],
+          [`袜子 ${clothesDays + 2}双`, "clothes", ""], ["长袖 2-3件", "clothes", ""],
+          ["轻薄外套/开衫", "clothes", ""], ["长裤 2条", "clothes", ""],
+          ["睡衣 1套", "clothes", ""], ["运动/舒服裤 1条", "clothes", ""]
+        ] },
+        { name: "鞋包配饰", items: [
+          ["舒服通勤鞋", "clothes", ""], ["徒步鞋/靴子", "clothes", ""],
+          ["拖鞋", "clothes", ""], ["晴雨伞", "other", ""], ["墨镜", "personal", "carry-on"],
+          ["腰包/小包", "personal", "carry-on"], ["脏衣袋", "other", ""]
+        ] },
+        { name: "洗护护肤", items: [
+          ["洗面奶", "care", ""], ["卸妆用品", "care", ""], ["防晒霜", "care", ""],
+          ["面霜/身体乳", "care", ""], ["洗发水/护发素", "care", ""],
+          ["牙刷牙膏", "care", ""], ["洗衣液/洗衣凝珠", "care", ""],
+          ["剃毛刀", "care", "checked"], ["卫生巾/安睡裤", "care", ""]
+        ] },
+        { name: "药包", items: [
+          ["止痛药", "care", ""], ["止泻药", "care", ""], ["过敏药", "care", ""],
+          ["肠胃药", "care", ""], ["晕车药", "care", ""], ["创可贴/消毒棉片", "care", ""]
+        ] },
+        { name: "落地第一晚", items: [
+          ["一套换洗衣物", "clothes", "carry-on"], ["基础洗漱小样", "care", "carry-on"],
+          ["眼镜/OK镜用品", "personal", "carry-on"], ["常用药小包", "care", "carry-on"]
+        ] }
+      ];
+
+      if (isCold) groups.push({ name: "寒冷天气", items: [
+        ["保暖内衣", "clothes", ""], ["厚外套/羽绒中间层", "clothes", ""],
+        ["围巾/帽子/手套", "clothes", ""], ["厚袜子", "clothes", ""]
+      ] });
+      if (needsPhoto) groups.push({ name: "拍照与正式场合", items: [
+        ["白衬衫/正式上衣", "clothes", ""], ["适合拍照的裙子或裤装", "clothes", ""],
+        ["首饰", "personal", "carry-on"], ["全妆化妆品", "care", ""]
+      ] });
+      if (needsOutdoor) groups.push({ name: "户外", items: [
+        ["冲锋衣", "clothes", ""], ["速干/运动衣", "clothes", ""],
+        ["防蚊用品", "care", ""], ["水杯", "other", ""]
+      ] });
+      if (needsCare) groups.push({ name: "个人护理专项", items: [
+        ["痘痘贴", "care", "carry-on"], ["护手霜/唇膏", "care", "carry-on"],
+        ["眼药水", "care", "carry-on"], ["身体乳", "care", ""]
+      ] });
+
+      return groups.map((group) => ({
+        ...group,
+        items: group.items.map(([name, kind, transport]) => ({
+          id: uid("rec"),
+          name: travelers > 1 && !/护照|手机|电脑|平板|银行卡|学生证/.test(name) ? `${name} × ${travelers}人` : name,
+          kind,
+          transport,
+          selected: true
+        }))
+      }));
+    }
+
+    function parseBagSetup(text) {
+      const lines = String(text || "").split("\n").map((line) => line.trim()).filter(Boolean);
+      const roots = lines.map((line, index) => {
+        const parts = line.split(/[:：]/);
+        const luggageName = (parts[0] || `行李箱 ${index + 1}`).trim();
+        const compartments = (parts[1] || "主区域").split(/[、,，]/).map((part) => part.trim()).filter(Boolean);
+        return node(uid("luggage"), "luggage", luggageName, compartments.map((name) => node(uid("compartment"), "compartment", name)));
+      });
+      return roots.length ? roots : [node(uid("luggage"), "行李箱", [node(uid("compartment"), "compartment", "主区域")])];
+    }
+
+    function firstCompartmentByName(roots, pattern) {
+      let result = null;
+      walk(roots, (entry, path) => {
+        if (!result && entry.type === "compartment" && pattern.test(path.map((part) => part.name).join(" "))) result = entry;
+      });
+      return result;
+    }
+
+    function buildMapFromRecommendations(tripInfo, groups) {
+      const roots = parseBagSetup(tripInfo.bagSetup);
+      const backpack = firstCompartmentByName(roots, /双肩包|背包|随身|cabin|主仓/) || firstCompartmentByName(roots, /主/);
+      const staging = firstCompartmentByName(roots, /待放入|尚未归位|准备购买/);
+      const checked = firstCompartmentByName(roots, /开放|袋子|主区域|行李箱/) || roots[0].children[0];
+      const categoryBags = new Map();
+
+      groups.forEach((group) => {
+        const selectedItems = group.items.filter((entry) => entry.selected);
+        if (!selectedItems.length) return;
+        const wantsCarry = selectedItems.every((entry) => entry.transport === "carry-on");
+        const target = wantsCarry && backpack ? backpack : checked;
+        const groupBag = bag(uid("bag"), group.name);
+        groupBag.children = selectedItems.map((entry) => ({
+          ...node(uid("item"), "item", entry.name, [], entry.kind),
+          packed: false,
+          transport: entry.transport || defaultTransport("", entry.name)
+        }));
+        target.children = target.children || [];
+        target.children.push(groupBag);
+        categoryBags.set(group.name, groupBag);
+      });
+
+      if (staging) {
+        staging.children = staging.children || [];
+        staging.children.push({ ...item(uid("item"), "临出门确认：护照 手机 充电宝 手机线 充电头", "personal"), packed: false, transport: "carry-on" });
+      }
+      return normalizeData(roots);
+    }
+
+    function openAdd(targetId) {
+      const target = findWithParent(targetId)?.entry;
+      if (!target) return;
+      editMode = "add";
+      editId = null;
+      parentId = targetId;
+      document.getElementById("dialogTitle").textContent = `新增到 ${target.name}`;
+      document.getElementById("nodeName").value = "";
+      document.getElementById("typeField").hidden = false;
+      document.getElementById("nodePacked").value = target.id === "staging" || findPath(target.id)[0]?.id === "staging" ? "false" : "true";
+      document.getElementById("nodeTransport").value = "";
+      const typeSelect = document.getElementById("nodeType");
+      if (target.type === "luggage") {
+        typeSelect.innerHTML = '<option value="compartment">分区 / 箱面</option>';
+      } else if (target.type === "compartment") {
+        typeSelect.innerHTML = '<option value="item">物品</option><option value="bag">收纳包</option>';
+      } else {
+        typeSelect.innerHTML = '<option value="item">物品</option>';
+      }
+      syncKindField();
+      editDialog.showModal();
+      setTimeout(() => document.getElementById("nodeName").focus(), 0);
+    }
+
+    function openRename(id) {
+      const found = findWithParent(id);
+      if (!found) return;
+      editMode = "rename";
+      editId = id;
+      parentId = null;
+      document.getElementById("dialogTitle").textContent = "重命名";
+      document.getElementById("nodeName").value = found.entry.name;
+      document.getElementById("nodeKind").value = found.entry.kind || "other";
+      document.getElementById("nodePacked").value = String(Boolean(found.entry.packed));
+      document.getElementById("nodeTransport").value = found.entry.transport || "";
+      document.getElementById("typeField").hidden = true;
+      const isItem = found.entry.type === "item";
+      document.getElementById("kindField").hidden = !isItem;
+      document.getElementById("packedField").hidden = !isItem;
+      document.getElementById("transportField").hidden = !isItem;
+      editDialog.showModal();
+      setTimeout(() => document.getElementById("nodeName").select(), 0);
+    }
+
+    function syncKindField() {
+      const isItem = document.getElementById("nodeType").value === "item";
+      document.getElementById("kindField").hidden = !isItem;
+      document.getElementById("packedField").hidden = !isItem;
+      document.getElementById("transportField").hidden = !isItem;
+    }
+
+    editForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const name = document.getElementById("nodeName").value.trim();
+      if (!name) return;
+      if (editMode === "add-root") {
+        data.push(node(uid("luggage"), "luggage", name, [
+          node(uid("compartment"), "compartment", "主区域")
+        ]));
+      } else if (editMode === "add") {
+        const parent = findWithParent(parentId)?.entry;
+        if (!parent) return;
+        const type = document.getElementById("nodeType").value;
+        const kind = type === "item" ? document.getElementById("nodeKind").value : "other";
+        parent.children = parent.children || [];
+        const created = node(uid(type), type, name, [], kind);
+        if (type === "item") {
+          created.packed = document.getElementById("nodePacked").value === "true";
+          created.transport = document.getElementById("nodeTransport").value || defaultTransport(created.id, name);
+        }
+        parent.children.push(created);
+      } else {
+        const found = findWithParent(editId);
+        if (!found) return;
+        found.entry.name = name;
+        if (found.entry.type === "item") {
+          found.entry.kind = document.getElementById("nodeKind").value;
+          found.entry.packed = document.getElementById("nodePacked").value === "true";
+          found.entry.transport = document.getElementById("nodeTransport").value || defaultTransport(found.entry.id, name);
+        }
+      }
+      editDialog.close();
+      saveData();
+      render();
+    });
+
+    document.getElementById("nodeType").addEventListener("change", syncKindField);
+
+    function containerOptions(excludeId) {
+      const excluded = findWithParent(excludeId)?.entry;
+      const invalid = new Set([excludeId]);
+      if (excluded) walk(excluded.children || [], (entry) => invalid.add(entry.id));
+      const options = [];
+      walk(data, (entry, path) => {
+        if ((entry.type === "compartment" || entry.type === "bag") && !invalid.has(entry.id)) {
+          options.push({ id: entry.id, path: path.map((part) => part.name).join(" › ") });
+        }
+      });
+      return options;
+    }
+
+    function openMove(id) {
+      movingId = id;
+      const select = document.getElementById("moveTarget");
+      select.innerHTML = containerOptions(id).map((option) =>
+        `<option value="${option.id}">${escapeHtml(option.path)}</option>`
+      ).join("");
+      moveDialog.showModal();
+    }
+
+    moveForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      moveDialog.close();
+      moveEntry(movingId, document.getElementById("moveTarget").value);
+    });
+
+    function moveEntry(sourceId, targetId) {
+      if (!sourceId || !targetId || sourceId === targetId) return;
+      const source = findWithParent(sourceId);
+      const target = findWithParent(targetId);
+      if (!source || !target || !["compartment", "bag"].includes(target.entry.type)) return;
+      const invalid = new Set([sourceId]);
+      walk(source.entry.children || [], (entry) => invalid.add(entry.id));
+      if (invalid.has(targetId)) {
+        showToast("不能移动到自身内部");
+        return;
+      }
+      source.list.splice(source.list.indexOf(source.entry), 1);
+      target.entry.children = target.entry.children || [];
+      target.entry.children.push(source.entry);
+      saveData("位置已更新");
+      render();
+      showToast(`${source.entry.name} → ${target.entry.name}`);
+      focusNode(sourceId);
+    }
+
+    function openDelete(id) {
+      const found = findWithParent(id);
+      if (!found) return;
+      deletingId = id;
+      const nested = countItems(found.entry);
+      document.getElementById("deleteMessage").textContent = nested
+        ? `删除“${found.entry.name}”会同时删除其中的 ${nested} 件物品。`
+        : `删除“${found.entry.name}”？`;
+      deleteDialog.showModal();
+    }
+
+    function fillTripForm() {
+      document.getElementById("tripName").value = trip.name || "";
+      document.getElementById("originCity").value = trip.origin || "";
+      document.getElementById("destinations").value = trip.destinations || "";
+      document.getElementById("startDate").value = trip.startDate || "";
+      document.getElementById("endDate").value = trip.endDate || "";
+      document.getElementById("travelerCount").value = trip.travelers || 1;
+      document.getElementById("tripType").value = trip.type || "leisure";
+      document.getElementById("laundryFrequency").value = trip.laundry || "weekly";
+      document.getElementById("specialNeeds").value = trip.specialNeeds || "";
+      document.getElementById("bagSetup").value = trip.bagSetup || "";
+    }
+
+    function readTripForm() {
+      return {
+        name: document.getElementById("tripName").value.trim() || "我的旅行",
+        origin: document.getElementById("originCity").value.trim(),
+        destinations: document.getElementById("destinations").value.trim(),
+        startDate: document.getElementById("startDate").value,
+        endDate: document.getElementById("endDate").value,
+        travelers: Math.max(1, Number(document.getElementById("travelerCount").value) || 1),
+        type: document.getElementById("tripType").value,
+        laundry: document.getElementById("laundryFrequency").value,
+        specialNeeds: document.getElementById("specialNeeds").value.trim(),
+        bagSetup: document.getElementById("bagSetup").value.trim()
+      };
+    }
+
+    function renderRecommendPreview() {
+      document.getElementById("recommendPreview").innerHTML = recommendedItems.map((group, groupIndex) => `
+        <section class="preview-group">
+          <h4>
+            <label>
+              <input type="checkbox" data-group-index="${groupIndex}" checked>
+              ${escapeHtml(group.name)}
+            </label>
+          </h4>
+          <div class="preview-items">
+            ${group.items.map((entry, itemIndex) => `
+              <label class="preview-item">
+                <input type="checkbox" data-rec-group="${groupIndex}" data-rec-item="${itemIndex}" checked>
+                <span>${escapeHtml(entry.name)}</span>
+              </label>
+            `).join("")}
+          </div>
+        </section>
+      `).join("");
+
+      document.querySelectorAll("[data-group-index]").forEach((checkbox) => {
+        checkbox.addEventListener("change", () => {
+          const groupIndex = Number(checkbox.dataset.groupIndex);
+          document.querySelectorAll(`[data-rec-group="${groupIndex}"]`).forEach((child) => {
+            child.checked = checkbox.checked;
+            recommendedItems[groupIndex].items[Number(child.dataset.recItem)].selected = child.checked;
+          });
+        });
+      });
+      document.querySelectorAll("[data-rec-group]").forEach((checkbox) => {
+        checkbox.addEventListener("change", () => {
+          recommendedItems[Number(checkbox.dataset.recGroup)].items[Number(checkbox.dataset.recItem)].selected = checkbox.checked;
+        });
+      });
+    }
+
+    deleteForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const found = findWithParent(deletingId);
+      if (found) found.list.splice(found.list.indexOf(found.entry), 1);
+      deleteDialog.close();
+      saveData("已删除");
+      render();
+    });
+
+    function updateSearch() {
+      const query = searchInput.value.trim().toLocaleLowerCase("zh-CN");
+      if (!query) {
+        searchResults.hidden = true;
+        searchResults.innerHTML = "";
+        return;
+      }
+      const matches = [];
+      walk(data, (entry, path) => {
+        if (entry.name.toLocaleLowerCase("zh-CN").includes(query)) {
+          matches.push({ entry, path });
+        }
+      });
+      searchResults.innerHTML = matches.length
+        ? matches.slice(0, 40).map(({ entry, path }) => `
+            <button class="result" type="button" data-result-id="${entry.id}">
+              <strong>${escapeHtml(entry.name)}</strong>
+              <span>${escapeHtml(path.map((part) => part.name).join(" › "))}</span>
+            </button>
+          `).join("")
+        : '<p class="empty-search">没有找到</p>';
+      searchResults.hidden = false;
+      searchResults.querySelectorAll("[data-result-id]").forEach((button) => {
+        button.addEventListener("click", () => {
+          searchResults.hidden = true;
+          focusNode(button.dataset.resultId);
+        });
+      });
+    }
+
+    function focusNode(id) {
+      const path = findPath(id);
+      let expanded = false;
+      path.forEach((entry) => {
+        if (entry.type === "bag" && entry.id !== id && collapsedBags.delete(entry.id)) expanded = true;
+      });
+      if (expanded) {
+        saveCollapsedBags();
+        render();
+      }
+      requestAnimationFrame(() => {
+        const element = document.getElementById(`view-${id}`);
+        if (!element) return;
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
+        element.classList.remove("flash");
+        requestAnimationFrame(() => element.classList.add("flash"));
+      });
+    }
+
+    function findPath(id) {
+      let match = [];
+      walk(data, (entry, path) => { if (entry.id === id) match = path; });
+      return match;
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.hidden = false;
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => { toast.hidden = true; }, 2200);
+    }
+
+    function inferKind(name) {
+      if (/衣|裤|袜|鞋|裙|衫|外套|棉袄|羽绒|皮带|泳衣|丝巾/.test(name)) return "clothes";
+      if (/药|片|洗|护|霜|膏|棉签|卫生巾|安睡裤|面膜|牙刷|浴帽/.test(name)) return "care";
+      if (/护照|电脑|MacBook|iPad|手机|充电宝|OK镜|项链/.test(name)) return "personal";
+      return "other";
+    }
+
+    function parseImportText(raw) {
+      const roots = [];
+      const stack = [];
+      let itemTotal = 0;
+      let bagTotal = 0;
+      let serial = 0;
+      const lines = raw.replaceAll("\t", "  ").replaceAll("\r", "").split("\n");
+
+      lines.forEach((line, index) => {
+        if (!line.trim() || /^(欧洲行李位置地图|PackMap 行李位置地图)$/.test(line.trim()) || /^导出时间[:：]/.test(line.trim())) return;
+        const spaces = line.match(/^ */)[0].length;
+        const depth = Math.floor(spaces / 2);
+        let content = line.trim();
+        const statusMatch = content.match(/^\[(已装|未装)\]\s*(.+)$/);
+        let entry;
+
+        if (statusMatch) {
+          let name = statusMatch[2].trim();
+          let transport = "";
+          const transportMatch = name.match(/（必须(随身|托运)）$/);
+          if (transportMatch) {
+            transport = transportMatch[1] === "随身" ? "carry-on" : "checked";
+            name = name.slice(0, transportMatch.index).trim();
+          }
+          if (!name) throw new Error(`第${index + 1}行缺少物品名称`);
+          entry = {
+            ...node(`import-item-${++serial}`, "item", name, [], inferKind(name)),
+            packed: statusMatch[1] === "已装",
+            transport: transport || defaultTransport("", name)
+          };
+          itemTotal += 1;
+        } else {
+          const type = depth === 0 ? "luggage" : depth === 1 ? "compartment" : "bag";
+          let id = `import-${type}-${++serial}`;
+          if (type === "luggage" && /新秀丽/.test(content)) id = "samsonite";
+          if (type === "luggage" && /日默瓦/.test(content)) id = "rimowa";
+          if (type === "luggage" && /双肩包/.test(content)) id = "backpack";
+          if (type === "luggage" && content === "待放入") id = "staging";
+          entry = node(id, type, content);
+          if (type === "bag") bagTotal += 1;
+        }
+
+        if (depth === 0) {
+          roots.push(entry);
+        } else {
+          const parent = stack[depth - 1];
+          if (!parent || parent.type === "item") throw new Error(`第${index + 1}行的缩进层级无法识别`);
+          parent.children.push(entry);
+        }
+        stack[depth] = entry;
+        stack.length = depth + 1;
+      });
+
+      if (!roots.length || !itemTotal) throw new Error("没有识别到箱子和物品，请粘贴完整导出文字");
+      return { data: roots, itemTotal, bagTotal };
+    }
+
+    function updateImportPreview() {
+      const summary = document.getElementById("importSummary");
+      const confirm = document.getElementById("confirmImport");
+      try {
+        parsedImport = parseImportText(importText.value);
+        summary.textContent = `可导入：${parsedImport.data.length}个箱子/区域，${parsedImport.bagTotal}个收纳包，${parsedImport.itemTotal}件物品`;
+        confirm.disabled = false;
+      } catch (error) {
+        parsedImport = null;
+        summary.textContent = importText.value.trim() ? error.message : "等待粘贴";
+        confirm.disabled = true;
+      }
+    }
+
+    function buildExportText() {
+      const lines = ["PackMap 行李位置地图", `导出时间：${new Date().toLocaleString("zh-CN")}`, ""];
+      const append = (entries, depth = 0) => {
+        entries.forEach((entry) => {
+          const marker = entry.type === "item" ? `${entry.packed ? "[已装]" : "[未装]"} ` : "";
+          const transport = entry.type === "item" && entry.transport
+            ? `（${entry.transport === "carry-on" ? "必须随身" : "必须托运"}）`
+            : "";
+          lines.push(`${"  ".repeat(depth)}${marker}${entry.name}${transport}`);
+          if (entry.children?.length) append(entry.children, depth + 1);
+        });
+      };
+      append(data);
+      return lines.join("\n");
+    }
+
+    async function copyExportText() {
+      const text = buildExportText();
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        textarea.remove();
+      }
+      document.getElementById("exportDialog").close();
+      showToast("完整记录已复制");
+    }
+
+    function downloadExportText() {
+      const blob = new Blob([buildExportText()], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `packmap-${new Date().toISOString().slice(0, 10)}.txt`;
+      link.click();
+      URL.revokeObjectURL(url);
+      document.getElementById("exportDialog").close();
+      showToast("TXT记录已导出");
+    }
+
+    function toggleAllBags() {
+      const bagIds = [];
+      walk(data, (entry) => { if (entry.type === "bag") bagIds.push(entry.id); });
+      const allCollapsed = bagIds.length && bagIds.every((id) => collapsedBags.has(id));
+      collapsedBags.clear();
+      if (!allCollapsed) bagIds.forEach((id) => collapsedBags.add(id));
+      saveCollapsedBags();
+      render();
+      showToast(allCollapsed ? "已展开全部收纳包" : "已折叠全部收纳包");
+    }
+
+    function printOrganizer() {
+      document.getElementById("exportDialog").close();
+      window.print();
+    }
+
+    searchInput.addEventListener("input", updateSearch);
+    document.getElementById("clearSearch").addEventListener("click", () => {
+      searchInput.value = "";
+      updateSearch();
+      searchInput.focus();
+    });
+
+    document.addEventListener("click", (event) => {
+      if (!event.target.closest(".search-wrap")) searchResults.hidden = true;
+    });
+
+    jumpList.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-jump]");
+      if (button) focusNode(button.dataset.jump);
+    });
+
+    document.getElementById("addLuggage").addEventListener("click", () => {
+      editMode = "add-root";
+      document.getElementById("dialogTitle").textContent = "新增箱子或区域";
+      document.getElementById("typeField").hidden = true;
+      document.getElementById("kindField").hidden = true;
+      document.getElementById("packedField").hidden = true;
+      document.getElementById("transportField").hidden = true;
+      document.getElementById("nodeName").value = "";
+      editDialog.showModal();
+      setTimeout(() => document.getElementById("nodeName").focus(), 0);
+    });
+
+    function openTripDialog() {
+      fillTripForm();
+      tripDialog.showModal();
+      setTimeout(() => document.getElementById("tripName").focus(), 0);
+    }
+
+    document.getElementById("newTrip").addEventListener("click", openTripDialog);
+    document.getElementById("editTrip").addEventListener("click", openTripDialog);
+
+    tripForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      trip = readTripForm();
+      saveTrip();
+      recommendedItems = baseRecommendationLibrary(trip);
+      tripDialog.close();
+      renderRecommendPreview();
+      recommendDialog.showModal();
+    });
+
+    recommendForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      if (!confirm("创建新行李地图会替换当前页面里的箱包内容。确定继续？")) return;
+      data = buildMapFromRecommendations(trip, recommendedItems);
+      departureChecks = {};
+      collapsedBags.clear();
+      saveDepartureChecks();
+      saveCollapsedBags();
+      saveData("已创建新旅行");
+      recommendDialog.close();
+      render();
+      showToast("新旅行行李地图已生成");
+    });
+
+    document.getElementById("exportData").addEventListener("click", () => {
+      document.getElementById("exportDialog").showModal();
+    });
+    document.getElementById("openImport").addEventListener("click", () => {
+      document.getElementById("exportDialog").close();
+      updateImportPreview();
+      importDialog.showModal();
+      setTimeout(() => importText.focus(), 0);
+    });
+    document.getElementById("copyExport").addEventListener("click", copyExportText);
+    document.getElementById("downloadExport").addEventListener("click", downloadExportText);
+    document.getElementById("printExport").addEventListener("click", printOrganizer);
+    document.getElementById("collapseAll").addEventListener("click", toggleAllBags);
+
+    importText.addEventListener("input", updateImportPreview);
+    importForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      if (!parsedImport) return;
+      localStorage.setItem(IMPORT_BACKUP_KEY, JSON.stringify(data));
+      data = normalizeData(parsedImport.data);
+      collapsedBags.clear();
+      saveCollapsedBags();
+      saveData(`已导入${parsedImport.itemTotal}件物品`);
+      importDialog.close();
+      render();
+      showToast(`导入完成：${parsedImport.itemTotal}件物品`);
+    });
+
+    document.getElementById("resetData").addEventListener("click", () => {
+      if (!confirm("恢复到2026年6月28日晚间文字快照（111件物品）？之后的移动和新增会被清除。")) return;
+      data = normalizeData(cloneInitial());
+      collapsedBags.clear();
+      saveCollapsedBags();
+      saveData("已恢复初始记录");
+      render();
+    });
+
+    document.querySelectorAll("[data-close]").forEach((button) => {
+      button.addEventListener("click", () => document.getElementById(button.dataset.close).close());
+    });
+
+    render();
+  </script>
+</body>
+</html>

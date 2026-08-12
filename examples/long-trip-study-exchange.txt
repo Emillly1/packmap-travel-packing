@@ -1,0 +1,67 @@
+PackMap 行李位置地图
+导出时间：2026/7/1 08:00:00
+
+Checked suitcase A - first stage
+  Open side - summer access
+    Summer clothing cube
+      [未装] Short-sleeve tops
+      [未装] Light long-sleeve tops
+      [未装] Summer bottoms
+      [未装] Swimwear
+    Split basics cube A
+      [未装] Underwear
+      [未装] Everyday socks
+      [未装] Sleepwear
+    [未装] Comfortable daily shoes in shoe bag
+  Zip side - toiletries and household
+    Leakproof full-size toiletries bag
+      [未装] Full-size shampoo and conditioner（必须托运）
+      [未装] Body lotion（必须托运）
+      [未装] Laundry supplies（必须托运）
+    [未装] Shower slippers
+    [未装] Foldable shopping tote
+Checked suitcase B - later stages
+  Open side - cold-weather module
+    Cold-weather cube - keep closed until exchange
+      [未装] Thermal base layers
+      [未装] Warm midlayer
+      [未装] Waterproof rain shell
+      [未装] Packable insulated jacket
+      [未装] Warm or wool socks
+    Split basics cube B
+      [未装] Underwear
+      [未装] Everyday socks
+  Zip side - formal and outdoor
+    Formal event bag
+      [未装] Photo-ready formal outfit
+      [未装] Simple accessories（必须随身）
+    [未装] Hiking shoes in shoe bag
+    [已装] Reserved empty space
+25L personal backpack
+  Main compartment
+    Document wallet
+      [未装] Passport and required visas（必须随身）
+      [未装] Document copies and offline screenshots（必须随身）
+      [未装] Wallet, cards, and small cash（必须随身）
+    Electronics pouch
+      [未装] Phone, laptop, and tablet（必须随身）
+      [未装] Chargers and cables（必须随身）
+      [未装] Power bank（必须随身）
+      [未装] Travel plug adapter（必须随身）
+    Delay and first-night kit
+      [未装] Light change of clothes and underwear（必须随身）
+      [未装] Travel-size basic toiletries（必须随身）
+      [未装] Personal essential medication（必须随身）
+      [未装] Glasses or essential vision supplies（必须随身）
+    [未装] Valuable accessories（必须随身）
+  Quick-access pocket
+    [未装] Boarding pass or offline check-in screenshot（必须随身）
+    [未装] Tissues, lip balm, hand cream, and mask（必须随身）
+    [未装] Empty reusable water bottle（必须随身）
+Pending decisions
+  Buy locally
+    [未装] Bulk laundry detergent
+    [未装] Household consumables
+  Optional
+    [未装] Hair styling tool（必须托运）
+    [未装] Extra dressy shoes

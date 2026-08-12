@@ -1,0 +1,4 @@
+interface:
+  display_name: "PackMap"
+  short_description: "Plan complete trips and map every item to a bag"
+  default_prompt: "Use $packmap-travel-packing to plan my trip, build a complete packing checklist, and map each item to my luggage."
