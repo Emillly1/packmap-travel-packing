@@ -1,4 +1,5 @@
 {
+  "schema_version": "1.0",
   "trip": {
     "name": "Six-month multi-city study trip",
     "origin": "East Asia",

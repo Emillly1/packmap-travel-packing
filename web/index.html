@@ -853,13 +853,14 @@
   <dialog id="exportDialog">
     <div class="dialog-head"><h3>数据与打印</h3></div>
     <div class="dialog-body">
-      <p>复制或导出当前记录，也可以从同格式文字恢复。</p>
+      <p>JSON 保留完整旅行资料，TXT 适合快速复制和兼容旧记录。</p>
     </div>
     <div class="dialog-actions">
       <button type="button" data-close="exportDialog">取消</button>
-      <button type="button" id="openImport">导入文字</button>
+      <button type="button" id="openImport">导入 JSON / TXT</button>
       <button type="button" id="printExport">打印模式</button>
       <button type="button" id="downloadExport">导出TXT</button>
+      <button type="button" id="downloadJson">导出JSON</button>
       <button type="button" class="primary" id="copyExport">复制文字</button>
     </div>
   </dialog>
@@ -943,11 +944,11 @@
 
   <dialog id="importDialog">
     <form id="importForm" method="dialog">
-      <div class="dialog-head"><h3>导入文字记录</h3></div>
+      <div class="dialog-head"><h3>导入 PackMap</h3></div>
       <div class="dialog-body">
         <div class="field">
-          <label for="importText">粘贴完整记录</label>
-          <textarea id="importText" placeholder="PackMap 行李位置地图&#10;导出时间：...&#10;&#10;托运行李 A&#10;  开放面&#10;    [已装] 晴雨伞"></textarea>
+          <label for="importText">粘贴 PackMap JSON 或 TXT</label>
+          <textarea id="importText" placeholder="可粘贴 Skill 生成的完整 JSON，或：&#10;&#10;PackMap 行李位置地图&#10;导出时间：...&#10;&#10;托运行李 A&#10;  开放面&#10;    [已装] 晴雨伞"></textarea>
         </div>
         <p class="import-summary" id="importSummary">等待粘贴</p>
       </div>
@@ -978,6 +979,18 @@
       if (id === "swiss-knife" || /瑞士军刀|折叠刀|剪刀/.test(name)) return "checked";
       if (id === "ok-lens" || /护照|签证|充电宝|备用锂电池|手机|电脑|平板|MacBook|iPad|相机|首饰|OK镜/.test(name)) return "carry-on";
       return "";
+    }
+
+    function normalizeTransport(value) {
+      if (value === "carry_on" || value === "carry-on") return "carry-on";
+      if (value === "checked") return "checked";
+      return "";
+    }
+
+    function inferRootTransport(name) {
+      if (/随身|双肩包|背包|personal|cabin|carry.?on/i.test(name)) return "carry-on";
+      if (/待|尚未|购买|可选|pending|optional/i.test(name)) return "";
+      return "checked";
     }
 
     const initialData = [
@@ -1112,10 +1125,11 @@
 
     function normalizeData(entries) {
       entries.forEach((root) => {
+        root.transport = normalizeTransport(root.transport) || inferRootTransport(root.name || "");
         const visit = (entry) => {
           if (entry.type === "item") {
-            if (typeof entry.packed !== "boolean") entry.packed = root.id !== "staging";
-            if (typeof entry.transport !== "string") entry.transport = defaultTransport(entry.id, entry.name);
+            if (typeof entry.packed !== "boolean") entry.packed = root.transport !== "";
+            entry.transport = normalizeTransport(entry.transport) || defaultTransport(entry.id, entry.name);
           }
           (entry.children || []).forEach(visit);
         };
@@ -1239,14 +1253,19 @@
 
     function transportState(entry, path = findPath(entry.id)) {
       if (entry.type !== "item" || !entry.transport) return null;
-      const rootId = path[0]?.id;
+      const root = path[0];
+      const rootTransport = normalizeTransport(root?.transport) || inferRootTransport(root?.name || "");
       const required = entry.transport === "carry-on" ? "随身" : "托运";
       let alert = false;
-      if (rootId !== "staging") {
-        if (entry.transport === "carry-on") alert = rootId !== "backpack";
-        if (entry.transport === "checked") alert = rootId === "backpack";
+      if (rootTransport) {
+        if (entry.transport === "carry-on") alert = rootTransport !== "carry-on";
+        if (entry.transport === "checked") alert = rootTransport === "carry-on";
       }
       return { required, alert };
+    }
+
+    function displayItemName(entry) {
+      return entry.quantity ? `${entry.name} · ${entry.quantity}` : entry.name;
     }
 
     function daysBetween(start, end) {
@@ -1272,7 +1291,7 @@
     }
 
     function departureChecklist() {
-      return [
+      const defaults = [
         { id: "passport", name: "护照" },
         { id: "visa-copy", name: "签证/护照复印件" },
         { id: "boarding-pass", name: "登机牌/值机截图" },
@@ -1289,6 +1308,9 @@
         { id: "weight", name: "托运行李称重留余量" },
         { id: "home-check", name: "门窗水电垃圾" }
       ];
+      return Array.isArray(trip.departureChecks) && trip.departureChecks.length
+        ? trip.departureChecks
+        : defaults;
     }
 
     function renderDeparturePanel() {
@@ -1321,11 +1343,14 @@
     }
 
     function renderSafetyPanel(alerts) {
-      if (!alerts.length) return "";
+      const imported = Array.isArray(trip.warnings) ? trip.warnings : [];
+      if (!alerts.length && !imported.length) return "";
       const buttons = alerts.slice(0, 6).map(({ entry, state }) =>
         `<button type="button" data-safety-id="${entry.id}">${escapeHtml(entry.name)}应${state.required}</button>`
       ).join("；");
-      return `<div class="safety-panel"><strong>位置提醒 ${alerts.length}</strong><span>${buttons}</span></div>`;
+      const notes = imported.slice(0, 6).map((warning) => escapeHtml(warning.issue || warning.item || "行李提醒")).join("；");
+      const details = [buttons, notes].filter(Boolean).join("；");
+      return `<div class="safety-panel"><strong>行李提醒 ${alerts.length + imported.length}</strong><span>${details}</span></div>`;
     }
 
     function render() {
@@ -1343,7 +1368,7 @@
       data.forEach((entry) => { packed += countPacked(entry); });
       const total = countType("item");
       document.getElementById("packedCount").textContent = packed;
-      document.getElementById("alertCount").textContent = alerts.length;
+      document.getElementById("alertCount").textContent = alerts.length + (Array.isArray(trip.warnings) ? trip.warnings.length : 0);
       document.getElementById("totalProgressText").textContent = `${percent(packed, total)}%`;
       document.getElementById("totalProgressFill").style.width = `${percent(packed, total)}%`;
       bindBoardEvents();
@@ -1412,8 +1437,8 @@
         <article class="compact-item ${entry.packed ? "item-packed" : ""}" id="view-${entry.id}"
           data-node-id="${entry.id}" data-kind="${entry.kind || "other"}" draggable="true">
           <span class="drag-handle" title="拖动" aria-hidden="true">⠿</span>
-          <input class="packed-toggle" data-id="${entry.id}" type="checkbox" ${entry.packed ? "checked" : ""} title="已装入" aria-label="${escapeHtml(entry.name)}已装入">
-          <span class="compact-name">${escapeHtml(entry.name)}</span>
+          <input class="packed-toggle" data-id="${entry.id}" type="checkbox" ${entry.packed ? "checked" : ""} title="已装入" aria-label="${escapeHtml(displayItemName(entry))}已装入">
+          <span class="compact-name">${escapeHtml(displayItemName(entry))}</span>
           ${renderTransportBadge(entry)}
           <span class="icon-actions">
             <button class="icon-btn move-node" data-id="${entry.id}" title="移动" aria-label="移动">↗</button>
@@ -1432,9 +1457,9 @@
           data-node-id="${entry.id}" data-kind="${entry.kind || "other"}" draggable="true">
           <div class="node-row">
             <span class="drag-handle" title="拖动" aria-hidden="true">⠿</span>
-            ${isBag ? '<span class="bag-spacer"></span>' : `<input class="packed-toggle" data-id="${entry.id}" type="checkbox" ${entry.packed ? "checked" : ""} title="已装入" aria-label="${escapeHtml(entry.name)}已装入">`}
+            ${isBag ? '<span class="bag-spacer"></span>' : `<input class="packed-toggle" data-id="${entry.id}" type="checkbox" ${entry.packed ? "checked" : ""} title="已装入" aria-label="${escapeHtml(displayItemName(entry))}已装入">`}
             <div class="node-name">
-              ${escapeHtml(entry.name)}
+              ${escapeHtml(isBag ? entry.name : displayItemName(entry))}
               ${isBag ? `<small class="bag-label">收纳包 · ${countPacked(entry)}/${countItems(entry)}已装</small>` : ""}
               ${!isBag ? renderTransportBadge(entry) : ""}
             </div>
@@ -1945,6 +1970,112 @@
       return "other";
     }
 
+    function kindFromCategory(category, name) {
+      if (category === "clothes") return "clothes";
+      if (["toiletries", "medicine", "beauty"].includes(category)) return "care";
+      if (["documents", "electronics"].includes(category)) return "personal";
+      return inferKind(name);
+    }
+
+    function categoryFromKind(entry) {
+      if (entry.category) return entry.category;
+      if (entry.kind === "clothes") return "clothes";
+      if (entry.kind === "care") return "toiletries";
+      if (entry.kind === "personal") return "documents";
+      return "other";
+    }
+
+    function appTripType(value) {
+      const normalized = String(value || "").toLowerCase();
+      if (normalized.includes("study") || normalized.includes("exchange")) return "study";
+      if (normalized.includes("business")) return "business";
+      if (normalized.includes("outdoor") || normalized.includes("hiking")) return "outdoor";
+      return "leisure";
+    }
+
+    function parseImportJson(raw) {
+      const source = JSON.parse(raw);
+      if (!source || typeof source !== "object" || Array.isArray(source)) throw new Error("JSON 顶层必须是对象");
+      if (!Array.isArray(source.containers) || !source.containers.length) throw new Error("JSON 缺少 containers");
+
+      const seenIds = new Set();
+      let itemTotal = 0;
+      let bagTotal = 0;
+
+      const mapNode = (entry, depth = 0) => {
+        if (!entry || typeof entry !== "object") throw new Error("JSON 中存在无效节点");
+        if (!/^[a-z0-9][a-z0-9-]*$/.test(entry.id || "")) throw new Error(`节点 ID 无效：${entry.id || "空"}`);
+        if (seenIds.has(entry.id)) throw new Error(`节点 ID 重复：${entry.id}`);
+        seenIds.add(entry.id);
+        if (!["luggage", "compartment", "bag", "item"].includes(entry.type)) throw new Error(`节点类型无效：${entry.type}`);
+        if (!String(entry.name || "").trim()) throw new Error(`节点 ${entry.id} 缺少名称`);
+        if (depth === 0 && entry.type !== "luggage") throw new Error("containers 顶层节点必须是 luggage");
+
+        const children = entry.children || [];
+        if (!Array.isArray(children)) throw new Error(`节点 ${entry.id} 的 children 必须是数组`);
+        if (entry.type === "item" && children.length) throw new Error(`物品 ${entry.id} 不能包含子节点`);
+
+        if (entry.type === "item") {
+          itemTotal += 1;
+          return {
+            id: entry.id,
+            type: "item",
+            name: String(entry.name).trim(),
+            kind: kindFromCategory(entry.category, entry.name),
+            category: entry.category || "other",
+            children: [],
+            packed: entry.packed === true,
+            transport: normalizeTransport(entry.transport_rule || entry.transport) || defaultTransport(entry.id, entry.name),
+            ...(entry.quantity ? { quantity: String(entry.quantity) } : {}),
+            ...(entry.access ? { access: entry.access } : {}),
+            ...(entry.risk ? { risk: entry.risk } : {}),
+            ...(Array.isArray(entry.stage_ids) ? { stage_ids: entry.stage_ids } : {}),
+            ...(entry.recommendation ? { recommendation: entry.recommendation } : {}),
+            ...(entry.reason ? { reason: entry.reason } : {})
+          };
+        }
+
+        if (entry.type === "bag") bagTotal += 1;
+        return {
+          id: entry.id,
+          type: entry.type,
+          name: String(entry.name).trim(),
+          kind: "other",
+          children: children.map((child) => mapNode(child, depth + 1)),
+          ...(entry.type === "luggage" ? { transport: normalizeTransport(entry.transport) || inferRootTransport(entry.name) } : {})
+        };
+      };
+
+      const mapped = source.containers.map((entry) => mapNode(entry));
+      const sourceTrip = source.trip || {};
+      const importedChecks = Array.isArray(source.departure_checks) ? source.departure_checks : [];
+      const importedTrip = {
+        ...defaultTrip(),
+        name: sourceTrip.name || "导入的旅行",
+        origin: sourceTrip.origin || "",
+        destinations: Array.isArray(sourceTrip.destinations) ? sourceTrip.destinations.join("、") : (sourceTrip.destinations || ""),
+        startDate: sourceTrip.start_date || "",
+        endDate: sourceTrip.end_date || "",
+        travelers: Math.max(1, Number(sourceTrip.travelers) || 1),
+        type: appTripType(sourceTrip.trip_type),
+        laundry: ["weekly", "often", "rare"].includes(sourceTrip.laundry_frequency) ? sourceTrip.laundry_frequency : "weekly",
+        specialNeeds: sourceTrip.notes || "",
+        bagSetup: mapped.map((root) => `${root.name}：${(root.children || []).map((child) => child.name).join("、")}`).join("\n"),
+        stages: Array.isArray(sourceTrip.stages) ? sourceTrip.stages : [],
+        departureChecks: importedChecks.map((check) => ({ id: check.id, name: check.name })),
+        warnings: Array.isArray(source.warnings) ? source.warnings : []
+      };
+
+      return {
+        data: mapped,
+        itemTotal,
+        bagTotal,
+        format: "JSON",
+        trip: importedTrip,
+        departureChecks: Object.fromEntries(importedChecks.map((check) => [check.id, check.checked === true]))
+      };
+    }
+
     function parseImportText(raw) {
       const roots = [];
       const stack = [];
@@ -1999,15 +2130,21 @@
       });
 
       if (!roots.length || !itemTotal) throw new Error("没有识别到箱子和物品，请粘贴完整导出文字");
-      return { data: roots, itemTotal, bagTotal };
+      return { data: roots, itemTotal, bagTotal, format: "TXT" };
+    }
+
+    function parseImportPayload(raw) {
+      const trimmed = raw.trim();
+      if (!trimmed) throw new Error("等待粘贴");
+      return trimmed.startsWith("{") ? parseImportJson(trimmed) : parseImportText(raw);
     }
 
     function updateImportPreview() {
       const summary = document.getElementById("importSummary");
       const confirm = document.getElementById("confirmImport");
       try {
-        parsedImport = parseImportText(importText.value);
-        summary.textContent = `可导入：${parsedImport.data.length}个箱子/区域，${parsedImport.bagTotal}个收纳包，${parsedImport.itemTotal}件物品`;
+        parsedImport = parseImportPayload(importText.value);
+        summary.textContent = `${parsedImport.format} 可导入：${parsedImport.data.length}个箱子/区域，${parsedImport.bagTotal}个收纳包，${parsedImport.itemTotal}件物品`;
         confirm.disabled = false;
       } catch (error) {
         parsedImport = null;
@@ -2024,12 +2161,71 @@
           const transport = entry.type === "item" && entry.transport
             ? `（${entry.transport === "carry-on" ? "必须随身" : "必须托运"}）`
             : "";
-          lines.push(`${"  ".repeat(depth)}${marker}${entry.name}${transport}`);
+          lines.push(`${"  ".repeat(depth)}${marker}${entry.type === "item" ? displayItemName(entry) : entry.name}${transport}`);
           if (entry.children?.length) append(entry.children, depth + 1);
         });
       };
       append(data);
       return lines.join("\n");
+    }
+
+    function buildExportJson() {
+      const mapNode = (entry) => {
+        if (entry.type === "item") {
+          return {
+            id: entry.id,
+            type: "item",
+            name: entry.name,
+            category: categoryFromKind(entry),
+            packed: entry.packed === true,
+            transport_rule: entry.transport === "carry-on" ? "carry_on" : (entry.transport || "none"),
+            access: entry.access || "any",
+            ...(entry.quantity ? { quantity: entry.quantity } : {}),
+            ...(entry.risk ? { risk: entry.risk } : {}),
+            ...(Array.isArray(entry.stage_ids) ? { stage_ids: entry.stage_ids } : {}),
+            ...(entry.recommendation ? { recommendation: entry.recommendation } : {}),
+            ...(entry.reason ? { reason: entry.reason } : {})
+          };
+        }
+        return {
+          id: entry.id,
+          type: entry.type,
+          name: entry.name,
+          ...(entry.type === "luggage" ? { transport: entry.transport === "carry-on" ? "carry_on" : (entry.transport || "none") } : {}),
+          children: (entry.children || []).map(mapNode)
+        };
+      };
+
+      const checks = departureChecklist().map((check) => ({
+        id: check.id,
+        name: check.name,
+        checked: departureChecks[check.id] === true
+      }));
+      const locationWarnings = getSafetyAlerts().map(({ entry, state }) => ({
+        item: entry.name,
+        issue: `${entry.name} 应${state.required}，当前位置不符合运输要求`,
+        severity: "high"
+      }));
+      const destinations = String(trip.destinations || "").split(/[、,，]/).map((part) => part.trim()).filter(Boolean);
+
+      return {
+        schema_version: "1.0",
+        trip: {
+          name: trip.name || "我的旅行",
+          origin: trip.origin || "",
+          destinations,
+          start_date: trip.startDate || "",
+          end_date: trip.endDate || "",
+          travelers: Math.max(1, Number(trip.travelers) || 1),
+          trip_type: ({ study: "study_exchange", leisure: "leisure", business: "business", outdoor: "outdoor" })[trip.type] || "leisure",
+          laundry_frequency: trip.laundry || "weekly",
+          notes: trip.specialNeeds || "",
+          stages: Array.isArray(trip.stages) ? trip.stages : []
+        },
+        containers: data.map(mapNode),
+        departure_checks: checks,
+        warnings: [...(Array.isArray(trip.warnings) ? trip.warnings : []), ...locationWarnings]
+      };
     }
 
     async function copyExportText() {
@@ -2056,10 +2252,27 @@
       const link = document.createElement("a");
       link.href = url;
       link.download = `packmap-${new Date().toISOString().slice(0, 10)}.txt`;
+      document.body.appendChild(link);
       link.click();
-      URL.revokeObjectURL(url);
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
       document.getElementById("exportDialog").close();
       showToast("TXT记录已导出");
+    }
+
+    function downloadExportJson() {
+      const content = JSON.stringify(buildExportJson(), null, 2);
+      const blob = new Blob([content], { type: "application/json;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `packmap-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+      document.getElementById("exportDialog").close();
+      showToast("JSON记录已导出");
     }
 
     function toggleAllBags() {
@@ -2150,6 +2363,7 @@
     });
     document.getElementById("copyExport").addEventListener("click", copyExportText);
     document.getElementById("downloadExport").addEventListener("click", downloadExportText);
+    document.getElementById("downloadJson").addEventListener("click", downloadExportJson);
     document.getElementById("printExport").addEventListener("click", printOrganizer);
     document.getElementById("collapseAll").addEventListener("click", toggleAllBags);
 
@@ -2157,8 +2371,22 @@
     importForm.addEventListener("submit", (event) => {
       event.preventDefault();
       if (!parsedImport) return;
-      localStorage.setItem(IMPORT_BACKUP_KEY, JSON.stringify(data));
+      localStorage.setItem(IMPORT_BACKUP_KEY, JSON.stringify({ data, trip, departureChecks }));
       data = normalizeData(parsedImport.data);
+      if (parsedImport.trip) {
+        trip = parsedImport.trip;
+        saveTrip();
+      } else {
+        trip = { ...trip, stages: [], departureChecks: [], warnings: [] };
+        saveTrip();
+      }
+      if (parsedImport.departureChecks) {
+        departureChecks = parsedImport.departureChecks;
+        saveDepartureChecks();
+      } else {
+        departureChecks = {};
+        saveDepartureChecks();
+      }
       collapsedBags.clear();
       saveCollapsedBags();
       saveData(`已导入${parsedImport.itemTotal}件物品`);

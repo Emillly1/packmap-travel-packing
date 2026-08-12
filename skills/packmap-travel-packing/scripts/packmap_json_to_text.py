@@ -13,6 +13,9 @@ from typing import Any
 def item_label(node: dict[str, Any]) -> str:
     packed = "已装" if node.get("packed") else "未装"
     name = str(node.get("name", "Unnamed item"))
+    quantity = str(node.get("quantity", "")).strip()
+    if quantity:
+        name = f"{name} · {quantity}"
     transport = node.get("transport_rule") or node.get("transport") or "none"
     suffix = ""
     if transport in {"carry_on", "carry-on"}:
@@ -42,6 +45,7 @@ def validate(data: dict[str, Any]) -> None:
         raise ValueError("PackMap input must contain a non-empty containers list")
 
     valid_types = {"luggage", "compartment", "bag", "item"}
+    valid_transport = {None, "", "none", "carry_on", "carry-on", "checked"}
     seen_ids: set[str] = set()
 
     def validate_node(node: Any, path: str) -> None:
@@ -60,12 +64,18 @@ def validate(data: dict[str, Any]) -> None:
         children = node.get("children", []) or []
         if node["type"] == "item" and children:
             raise ValueError(f"Item {node_id} cannot contain children")
+        if node["type"] == "item" and node.get("transport_rule") not in valid_transport:
+            raise ValueError(f"Item {node_id} has an invalid transport_rule")
+        if node["type"] == "luggage" and node.get("transport") not in valid_transport:
+            raise ValueError(f"Luggage {node_id} has an invalid transport")
         if not isinstance(children, list):
             raise ValueError(f"{path}.children must be a list")
         for index, child in enumerate(children):
             validate_node(child, f"{path}.children[{index}]")
 
     for index, container in enumerate(containers):
+        if not isinstance(container, dict) or container.get("type") != "luggage":
+            raise ValueError(f"containers[{index}] must be a luggage node")
         validate_node(container, f"containers[{index}]")
 
 

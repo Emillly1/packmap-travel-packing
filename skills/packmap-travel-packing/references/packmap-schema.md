@@ -4,6 +4,7 @@ Use this structure when creating data for a packing map or website import.
 
 ```json
 {
+  "schema_version": "1.0",
   "trip": {
     "name": "Europe exchange",
     "origin": "Shanghai",
@@ -76,6 +77,13 @@ Item-only fields:
 - `recommendation`: optional `bring`, `buy_local`, `optional`, or `skip`.
 - `reason`: optional short explanation tied to a trip fact.
 
+Root fields:
+
+- `schema_version`: use `"1.0"` for the current PackMap website contract.
+- `containers`: non-empty list of `luggage` nodes.
+- `departure_checks`: optional departure checklist definitions and checked state.
+- `warnings`: optional safety or itinerary warnings shown after JSON import.
+
 Trip-stage fields:
 
 - `id`: stable lowercase hyphenated ID.
@@ -93,5 +101,11 @@ When converting to PackMap text:
 - `item` becomes `[已装] Name` or `[未装] Name`.
 - `transport_rule: carry_on` appends `（必须随身）`.
 - `transport_rule: checked` appends `（必须托运）`.
+- `quantity` appends ` · Quantity` to the item label so TXT imports remain useful.
 - Use two spaces per indentation level.
 - TXT intentionally carries only locations, packed state, and transport suffixes. JSON remains the complete source of truth.
+
+## Website Handoff
+
+- Prefer pasting complete JSON into the organizer to retain trip dates, travelers, stages, quantities, recommendations, departure checks, and warnings.
+- Use TXT for quick sharing or importing older records. TXT retains hierarchy, packed state, quantity, and transport rules only.

@@ -74,9 +74,9 @@ For active packing, use:
 - [ ] Item - suggested location - carry-on/checked or other note
 ```
 
-For a structured handoff, output valid JSON matching `references/packmap-schema.md`. Use stable lowercase hyphenated IDs and include stages, warnings, and departure checks when relevant. Treat JSON as the complete source of truth.
+For a structured handoff or website import, output valid JSON matching `references/packmap-schema.md`. Use `schema_version: "1.0"`, stable lowercase hyphenated IDs, and include stages, quantities, warnings, and departure checks when relevant. Treat JSON as the complete source of truth and prefer it for website handoff.
 
-For webpage import, convert JSON to indented TXT:
+For lightweight webpage import or compatibility with older records, convert JSON to indented TXT:
 
 ```bash
 python3 scripts/packmap_json_to_text.py trip.json -o trip.txt

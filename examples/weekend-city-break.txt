@@ -1,0 +1,20 @@
+PackMap 行李位置地图
+导出时间：2026/8/12 12:00:00
+
+Shared cabin roller
+  Main compartment
+    Traveler one clothing cube
+      [未装] Tops · 3
+      [未装] Underwear and socks · 3 sets
+    Traveler two clothing cube
+      [未装] Tops · 3
+      [未装] Underwear and socks · 3 sets
+    [未装] Light evening layer · 2
+    [未装] Airport-compliant liquid bag · 1 shared set（必须随身）
+Personal crossbody bag
+  Quick access
+    [未装] Passports and travel documents · 2 sets（必须随身）
+    [未装] Phones · 2（必须随身）
+    [未装] Power bank · 1 shared（必须随身）
+    [未装] Compact umbrella · 1
+    [已装] Comfortable walking shoes · 2 pairs worn

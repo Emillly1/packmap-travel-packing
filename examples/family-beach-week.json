@@ -1,0 +1,107 @@
+{
+  "schema_version": "1.0",
+  "trip": {
+    "name": "三人亲子海边度假",
+    "origin": "北京",
+    "destinations": ["三亚"],
+    "start_date": "2026-10-02",
+    "end_date": "2026-10-08",
+    "travelers": 3,
+    "trip_type": "family_leisure",
+    "laundry_frequency": "often",
+    "notes": "两位成人和一名儿童，酒店可洗衣，每天游泳，儿童容易晕车。",
+    "stages": [
+      {
+        "id": "beach-holiday",
+        "name": "海边酒店",
+        "destinations": ["三亚"],
+        "start_date": "2026-10-02",
+        "end_date": "2026-10-08",
+        "climate": ["炎热", "强日晒", "阵雨"],
+        "activities": ["游泳", "亲子活动", "短途乘车"]
+      }
+    ]
+  },
+  "containers": [
+    {
+      "id": "family-checked-suitcase",
+      "type": "luggage",
+      "name": "家庭共用托运行李箱",
+      "transport": "checked",
+      "children": [
+        {
+          "id": "family-clothes-side",
+          "type": "compartment",
+          "name": "衣物面",
+          "children": [
+            {
+              "id": "adult-clothes-cube",
+              "type": "bag",
+              "name": "成人衣物包",
+              "children": [
+                {"id": "adult-summer-outfits", "type": "item", "name": "成人轻薄衣物", "quantity": "每人4套", "category": "clothes", "packed": false, "transport_rule": "none", "access": "daily", "stage_ids": ["beach-holiday"], "recommendation": "bring", "reason": "酒店可洗衣"},
+                {"id": "adult-swimwear", "type": "item", "name": "成人泳衣", "quantity": "每人2套", "category": "clothes", "packed": false, "transport_rule": "none", "access": "daily", "stage_ids": ["beach-holiday"], "recommendation": "bring", "reason": "每天游泳，便于轮换晾干"}
+              ]
+            },
+            {
+              "id": "child-clothes-cube",
+              "type": "bag",
+              "name": "儿童衣物包",
+              "children": [
+                {"id": "child-outfits", "type": "item", "name": "儿童轻薄衣物", "quantity": "6套", "category": "clothes", "packed": false, "transport_rule": "none", "access": "daily", "stage_ids": ["beach-holiday"], "recommendation": "bring", "reason": "儿童换洗频率更高"},
+                {"id": "child-swimwear", "type": "item", "name": "儿童泳衣与防晒泳衣", "quantity": "2套", "category": "clothes", "packed": false, "transport_rule": "none", "access": "daily", "stage_ids": ["beach-holiday"], "recommendation": "bring", "reason": "游泳与日晒防护"}
+              ]
+            },
+            {"id": "family-sandals", "type": "item", "name": "凉鞋或涉水鞋", "quantity": "每人1双", "category": "clothes", "packed": false, "transport_rule": "none", "access": "daily", "recommendation": "bring", "reason": "海边活动"}
+          ]
+        },
+        {
+          "id": "family-care-side",
+          "type": "compartment",
+          "name": "洗护与共享用品面",
+          "children": [
+            {
+              "id": "family-liquid-bag",
+              "type": "bag",
+              "name": "防漏液体袋",
+              "children": [
+                {"id": "family-sunscreen", "type": "item", "name": "家庭装防晒霜", "quantity": "2瓶", "category": "toiletries", "packed": false, "transport_rule": "checked", "access": "daily", "risk": "liquid_leak", "recommendation": "bring", "reason": "三人高频补涂"},
+                {"id": "after-sun-care", "type": "item", "name": "晒后保湿", "quantity": "1瓶", "category": "toiletries", "packed": false, "transport_rule": "checked", "access": "daily", "risk": "liquid_leak", "recommendation": "optional", "reason": "强日晒环境"}
+              ]
+            },
+            {"id": "laundry-bag-family", "type": "item", "name": "洗衣袋", "quantity": "2个", "category": "daily", "packed": false, "transport_rule": "none", "access": "daily", "recommendation": "bring", "reason": "分开湿衣和脏衣"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "adult-personal-backpack",
+      "type": "luggage",
+      "name": "成人随身双肩包",
+      "transport": "carry_on",
+      "children": [
+        {
+          "id": "family-airport-pocket",
+          "type": "compartment",
+          "name": "机场与儿童随取",
+          "children": [
+            {"id": "family-documents", "type": "item", "name": "三人证件与出行文件", "quantity": "3套", "category": "documents", "packed": false, "transport_rule": "carry_on", "access": "airport", "risk": "valuable", "recommendation": "bring", "reason": "统一保管并准备电子备份"},
+            {"id": "child-change", "type": "item", "name": "儿童换洗衣物", "quantity": "1套", "category": "clothes", "packed": false, "transport_rule": "carry_on", "access": "airport", "recommendation": "bring", "reason": "航程和行李延误备用"},
+            {"id": "child-motion-medicine", "type": "item", "name": "按医嘱准备的儿童晕车用品", "quantity": "1份", "category": "medicine", "packed": false, "transport_rule": "carry_on", "access": "airport", "recommendation": "bring", "reason": "儿童容易晕车"},
+            {"id": "family-power-bank", "type": "item", "name": "充电宝", "quantity": "1个", "category": "electronics", "packed": false, "transport_rule": "carry_on", "access": "airport", "risk": "battery", "recommendation": "bring", "reason": "必须随身"},
+            {"id": "child-snacks", "type": "item", "name": "儿童零食与空水杯", "quantity": "1小包", "category": "food", "packed": false, "transport_rule": "carry_on", "access": "airport", "recommendation": "bring", "reason": "候机与途中使用"}
+          ]
+        }
+      ]
+    }
+  ],
+  "departure_checks": [
+    {"id": "family-doc-check", "name": "三人证件、预订和紧急联系人已离线保存", "checked": false},
+    {"id": "child-seat-check", "name": "确认接送车辆是否需要儿童安全座椅", "checked": false},
+    {"id": "weather-check", "name": "出发前检查台风和航班动态", "checked": false}
+  ],
+  "warnings": [
+    {"item": "儿童用品", "issue": "儿童药品和防晒用品应按年龄、医嘱及产品标签使用。", "severity": "high"},
+    {"item": "液体袋", "issue": "家庭装液体应双层防漏并放在托运行李内。", "severity": "medium"}
+  ]
+}

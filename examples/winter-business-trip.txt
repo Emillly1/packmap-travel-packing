@@ -1,0 +1,26 @@
+PackMap 行李位置地图
+导出时间：2026/8/12 12:00:00
+
+Cabin roller
+  Clothing side
+    Business clothing cube
+      [未装] Business shirts · 4
+      [未装] Business trousers · 2
+      [未装] Underwear and socks · 6 sets
+      [未装] Thermal base layer · 2
+    [未装] Presentation outfit · 1 complete set（必须随身）
+  First-night side
+    [未装] Airport-compliant toiletries · 1 set（必须随身）
+    [未装] Packable waterproof shell · 1
+Personal laptop bag
+  Main compartment
+    [未装] Passport and travel documents · 1 set（必须随身）
+    [未装] Work laptop · 1（必须随身）
+    [未装] Offline presentation backup · Cloud plus USB（必须随身）
+    [未装] Power bank · 1（必须随身）
+    [未装] Laptop and phone chargers · 1 set（必须随身）
+Small checked case
+  Formal and bulky items
+    [未装] Spare blazer · 1
+    [未装] Dress shoes in shoe bag · 1 pair
+    [未装] Voltage-compatible garment steamer · 1（必须托运）

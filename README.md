@@ -39,11 +39,11 @@ I will travel through warm and cold seasons, do laundry weekly, take two
 checked suitcases and one backpack, and want room for shopping.
 ```
 
-The full anonymous long-trip prompt and output are in [`examples/`](examples/).
+Four anonymous scenarios are in [`examples/SCENARIOS.md`](examples/SCENARIOS.md): a weekend city break, a family beach holiday, a winter business trip, and a six-month multi-stage study journey.
 
 ## Use the organizer
 
-Open [`web/index.html`](web/index.html) directly in a browser. Data stays in that browser's local storage. Use the import button to paste the generated TXT example, or start a new trip in the organizer.
+Open [`web/index.html`](web/index.html) directly in a browser. Data stays in that browser's local storage. Paste complete PackMap JSON for a lossless handoff, or use TXT for quick sharing and older records.
 
 The organizer is a static local demo. It has no account system, server, analytics, or external API calls.
 
@@ -55,11 +55,22 @@ python3 skills/packmap-travel-packing/scripts/packmap_json_to_text.py \
   -o examples/long-trip-study-exchange.txt
 ```
 
+## Verify skill and organizer integration
+
+Run the contract and converter suite:
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
+The automated suite validates every example, rejects malformed trees, checks JSON/TXT auto-detection, verifies quantity and transport metadata, and guards the lossless JSON round trip. This release was also exercised in the local organizer with all four JSON examples plus legacy TXT import, covering trip metadata, counts, custom departure checks, warnings, search paths, and stale-state cleanup.
+
 ## Repository layout
 
 ```text
 skills/packmap-travel-packing/  Codex skill
-examples/                       Anonymous long-trip example
+examples/                       Four anonymous test scenarios in JSON and TXT
+tests/                          Converter and website-contract tests
 web/index.html                  Local PackMap organizer demo
 ```
 

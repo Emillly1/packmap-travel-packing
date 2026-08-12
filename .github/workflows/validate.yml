@@ -12,7 +12,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Test converter and example
+      - name: Test skill, examples, converter, and web contract
         run: python -m unittest discover -s tests -v
       - name: Check web JavaScript syntax
         run: |
