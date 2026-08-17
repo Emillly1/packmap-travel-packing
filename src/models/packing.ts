@@ -40,6 +40,9 @@ export interface LuggageNode extends BaseNode {
   children: CompartmentNode[];
 }
 
+export type PackingNode = LuggageNode | CompartmentNode | BagNode | ItemNode;
+export type PackingContainerNode = CompartmentNode | BagNode;
+
 export interface DepartureCheck {
   id: string;
   name: string;

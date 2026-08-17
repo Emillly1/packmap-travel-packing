@@ -100,7 +100,7 @@ const desktopOverflow = await evaluate("document.documentElement.scrollWidth > w
 if (desktopOverflow) throw new Error("Desktop review has horizontal overflow");
 
 mkdirSync("artifacts", { recursive: true });
-await screenshot("phase-2-review-desktop.png");
+await screenshot("phase-3-review-desktop.png");
 
 const optionalBefore = await evaluate('document.querySelector("[data-candidate-id=empty-water-bottle]")?.checked');
 await evaluate('document.querySelector("[data-candidate-id=empty-water-bottle]")?.click()');
@@ -108,17 +108,80 @@ const optionalAfter = await evaluate('document.querySelector("[data-candidate-id
 if (optionalBefore !== false || optionalAfter !== true) throw new Error("Candidate toggle did not persist");
 
 await evaluate('document.querySelector("[data-action=confirm-candidates]").click()');
-await waitFor('document.querySelector(".workspace-screen")', "Workspace did not open after confirmation");
-const confirmedItems = await evaluate('document.querySelectorAll(".confirmed-groups span").length');
-if (confirmedItems < 20) throw new Error("Confirmed item summary is incomplete");
-await screenshot("phase-2-workspace-desktop.png");
+await waitFor('document.querySelector(".packing-workspace")', "Workspace did not open after confirmation");
+const mappedItems = await evaluate('document.querySelectorAll(".map-item").length');
+const luggageCount = await evaluate('document.querySelectorAll(".packing-case").length');
+if (mappedItems < 20 || luggageCount !== 2) throw new Error("Packing map was not materialized correctly");
+
+await evaluate(`
+  document.querySelector("[data-workspace-mode=add-bag]").click();
+`);
+await waitFor('document.querySelector("[data-create-mode=add-bag]")', "Pouch editor did not open");
+await evaluate(`
+  (() => {
+    const form = document.querySelector("[data-create-mode=add-bag]");
+    form.querySelector("[name=name]").value = "证件收纳袋";
+    form.requestSubmit();
+  })()
+`);
+await waitFor('[...document.querySelectorAll(".pouch-title strong")].some((node) => node.textContent === "证件收纳袋")', "Pouch was not created");
+
+await evaluate(`
+  const source = document.querySelector("[data-drag-node=identity-documents]");
+  const target = document.querySelector("[data-drop-target=luggage-1-compartment-2]");
+  const transfer = new DataTransfer();
+  source.dispatchEvent(new DragEvent("dragstart", { bubbles: true, dataTransfer: transfer }));
+  target.dispatchEvent(new DragEvent("dragover", { bubbles: true, cancelable: true, dataTransfer: transfer }));
+  target.dispatchEvent(new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer: transfer }));
+`);
+await evaluate(`
+  const input = document.querySelector("#workspaceSearch");
+  input.value = "身份证件";
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+`);
+await waitFor('document.querySelector(".search-result small")?.textContent.includes("袋子面")', "Search did not report the moved item path");
+const movedPath = await evaluate('document.querySelector(".search-result small").textContent.trim()');
+await evaluate('document.querySelector("[data-clear-search]").click()');
+
+await evaluate('document.querySelector("[data-workspace-mode=add-item]").click()');
+await waitFor('document.querySelector("[data-create-mode=add-item]")', "Item editor did not open");
+await evaluate(`
+  (() => {
+    const form = document.querySelector("[data-create-mode=add-item]");
+    form.querySelector("[name=name]").value = "备用框架眼镜";
+    form.querySelector("[name=quantity]").value = "1 副";
+    form.querySelector("[name=parentId]").value = "luggage-2-compartment-1";
+    form.requestSubmit();
+  })()
+`);
+await waitFor('[...document.querySelectorAll(".map-item strong")].some((node) => node.textContent === "备用框架眼镜")', "Custom item was not created");
+const customItemId = await evaluate('[...document.querySelectorAll(".map-item")].find((node) => node.textContent.includes("备用框架眼镜")).dataset.mapNodeId');
+await evaluate(`document.querySelector("[data-pack-id='${customItemId}']").click()`);
+await waitFor(`document.querySelector("[data-map-node-id='${customItemId}']")?.classList.contains("is-packed")`, "Packed status did not update");
+await evaluate('document.querySelector("[data-action=undo-map]").click()');
+await waitFor(`!document.querySelector("[data-map-node-id='${customItemId}']")?.classList.contains("is-packed")`, "Undo did not restore packed status");
+
+const desktopWorkspaceOverflow = await evaluate("document.documentElement.scrollWidth > window.innerWidth");
+if (desktopWorkspaceOverflow) throw new Error("Desktop workspace has horizontal overflow");
+await screenshot("phase-3-workspace-desktop.png");
 
 await command("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
-await evaluate('document.querySelector("[data-action=review-candidates]").click()');
-await waitFor('document.querySelector(".review-screen")', "Mobile review did not open");
+await evaluate('document.querySelector("[data-select-node=identity-documents]").click()');
+await waitFor('document.querySelector("[data-update-node=identity-documents]")', "Mobile item editor did not open");
 const mobileOverflow = await evaluate("document.documentElement.scrollWidth > window.innerWidth");
-if (mobileOverflow) throw new Error("Mobile review has horizontal overflow");
-await screenshot("phase-2-review-mobile.png");
+if (mobileOverflow) throw new Error("Mobile workspace has horizontal overflow");
+await screenshot("phase-3-workspace-mobile.png");
 
-console.log(JSON.stringify({ reviewTitle, candidateCount, hikingPresent, confirmedItems, desktopOverflow, mobileOverflow, screenshots: 3 }, null, 2));
+console.log(JSON.stringify({
+  reviewTitle,
+  candidateCount,
+  hikingPresent,
+  mappedItems,
+  luggageCount,
+  movedPath,
+  desktopOverflow,
+  desktopWorkspaceOverflow,
+  mobileOverflow,
+  screenshots: 3,
+}, null, 2));
 socket.close();

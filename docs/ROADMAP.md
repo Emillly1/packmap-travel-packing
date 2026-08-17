@@ -1,6 +1,6 @@
 # Delivery Roadmap
 
-Current status: Phase 2 complete. Phase 3 is next.
+Current status: Phase 3 complete. Phase 4 is next.
 
 ## Phase 0: Product foundation
 

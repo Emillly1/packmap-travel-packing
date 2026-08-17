@@ -1,10 +1,11 @@
 import { TRIP_TEMPLATES } from "../data/templates";
 import { countSelectedCandidates, flattenCandidateItems } from "../engine/planning";
-import { tripDurationDays, validateWizardStep } from "../engine/trip";
+import { validateWizardStep } from "../engine/trip";
 import type { CandidateItem, PackingCategory } from "../models/planning";
 import type { Recommendation, TransportRule } from "../models/packing";
 import type { LaundryFrequency, TemplateId, TransportMode, TripDraft, TripType } from "../models/trip";
 import type { AppState, AppStore } from "../state/store";
+import { bindWorkspaceEvents, renderWorkspace } from "./workspace";
 
 const WIZARD_STEPS = ["行程", "交通", "习惯", "箱包"] as const;
 
@@ -226,10 +227,6 @@ function renderWizard(state: AppState): string {
   `;
 }
 
-function transportLabel(mode: TransportMode): string {
-  return TRANSPORT_OPTIONS.find((entry) => entry.id === mode)?.name ?? mode;
-}
-
 const RECOMMENDATION_LABELS: Record<Recommendation, string> = {
   bring: "建议携带",
   "buy-local": "落地购买",
@@ -324,87 +321,6 @@ function renderReview(state: AppState): string {
   `;
 }
 
-function renderWorkspace(state: AppState): string {
-  const document = state.activeDocument;
-  if (!document) return renderTemplates();
-  const trip = document.trip;
-  const duration = tripDurationDays(trip.startDate, trip.endDate);
-  const directories = splitBagSetup(trip.bagSetup);
-  const planningResult = state.planningResult;
-  const allCandidates = planningResult ? flattenCandidateItems(planningResult) : [];
-  const selectedCandidates = allCandidates.filter((item) => item.selected);
-  const planningCompletion = planningResult && state.planningConfirmed ? 100 : 0;
-  return `
-    <main class="workspace-screen">
-      <section class="trip-summary">
-        <div>
-          <span class="eyebrow">ACTIVE TRIP / ${document.schemaVersion}</span>
-          <h1>${escapeHtml(trip.name)}</h1>
-          <p>${escapeHtml(trip.origin)} → ${trip.destinations.map(escapeHtml).join("、")}</p>
-        </div>
-        <div class="trip-summary__actions">
-          ${planningResult ? '<button class="quiet-button" type="button" data-action="review-candidates">重新筛选</button>' : ""}
-          <button class="quiet-button" type="button" data-action="edit-trip">编辑旅行</button>
-        </div>
-      </section>
-
-      <section class="workspace-grid">
-        <aside class="trip-facts">
-          <header>行程概览</header>
-          <dl>
-            <div><dt>行程时长</dt><dd>${duration} 天</dd></div>
-            <div><dt>旅行人数</dt><dd>${trip.travelers} 人</dd></div>
-            <div><dt>目的地</dt><dd>${trip.destinations.length} 个</dd></div>
-            <div><dt>交通方式</dt><dd>${trip.transportModes.map(transportLabel).join(" / ")}</dd></div>
-            <div><dt>洗衣频率</dt><dd>${trip.laundryFrequency === "weekly" ? "每周一次" : trip.laundryFrequency === "often" ? "经常可洗" : "不方便洗"}</dd></div>
-          </dl>
-        </aside>
-
-        <section class="map-stage" aria-labelledby="map-title">
-          <div class="map-heading"><div><span class="eyebrow">FIRST-LEVEL MAP</span><h2 id="map-title">箱包一级目录</h2></div><strong>${directories.length}</strong></div>
-          <div class="luggage-directory">
-            ${directories.map((root, index) => `
-              <article class="luggage-outline luggage-outline--${index % 4}">
-                <div class="luggage-handle" aria-hidden="true"></div>
-                <header><span>0${index + 1}</span><h3>${escapeHtml(root.name)}</h3></header>
-                <div class="luggage-compartments">
-                  ${root.compartments.map((area) => `<div>${escapeHtml(area)}</div>`).join("")}
-                </div>
-              </article>
-            `).join("")}
-          </div>
-        </section>
-
-        <aside class="progress-card">
-          <header>准备进度</header>
-          <div class="progress-zero"><strong>${planningCompletion}%</strong><span>${selectedCandidates.length} 项候选已确认</span></div>
-          <dl>
-            <div><dt>候选清单</dt><dd>${planningResult ? "已确认" : "待生成"}</dd></div>
-            <div><dt>位置提醒</dt><dd>0</dd></div>
-            <div><dt>出发检查</dt><dd>待建立</dd></div>
-          </dl>
-        </aside>
-      </section>
-
-      ${planningResult ? `
-        <section class="confirmed-list">
-          <header>
-            <div><span class="eyebrow">CONFIRMED ITEMS</span><h2>已确认候选清单</h2></div>
-            <strong>${selectedCandidates.length} 项</strong>
-          </header>
-          <div class="confirmed-groups">
-            ${planningResult.groups.map((group) => {
-              const items = group.items.filter((item) => item.selected);
-              if (!items.length) return "";
-              return `<section><h3>${escapeHtml(group.name)}</h3><div>${items.map((item) => `<span>${escapeHtml(item.name)} <b>${escapeHtml(item.quantity)}</b></span>`).join("")}</div></section>`;
-            }).join("")}
-          </div>
-        </section>
-      ` : ""}
-    </main>
-  `;
-}
-
 function renderApp(root: HTMLElement, state: AppState): void {
   const screen = state.screen === "templates"
     ? renderTemplates()
@@ -413,7 +329,7 @@ function renderApp(root: HTMLElement, state: AppState): void {
       : state.screen === "review"
         ? renderReview(state)
         : renderWorkspace(state);
-  root.innerHTML = `${renderHeader(state)}${screen}<div class="status-region" role="status" aria-live="polite"></div>`;
+  root.innerHTML = `${renderHeader(state)}${screen}<div class="status-region" role="status" aria-live="polite">${escapeHtml(state.notice ?? "")}</div>`;
 }
 
 function inputValue(root: HTMLElement, selector: string): string {
@@ -507,12 +423,21 @@ function bindEvents(root: HTMLElement, store: AppStore): void {
   bagSetup?.addEventListener("input", () => {
     if (preview) preview.innerHTML = renderBagPreview(bagSetup.value);
   });
+  if (store.getState().screen === "workspace") bindWorkspaceEvents(root, store);
 }
 
 export function mountApp(root: HTMLElement, store: AppStore): () => void {
   const update = (state: AppState) => {
+    const active = root.ownerDocument.activeElement;
+    const preserveSearchFocus = active instanceof HTMLInputElement && active.id === "workspaceSearch";
+    const searchSelection = preserveSearchFocus ? active.selectionStart : null;
     renderApp(root, state);
     bindEvents(root, store);
+    if (preserveSearchFocus) {
+      const nextSearch = root.querySelector<HTMLInputElement>("#workspaceSearch");
+      nextSearch?.focus();
+      if (searchSelection !== null) nextSearch?.setSelectionRange(searchSelection, searchSelection);
+    }
   };
   update(store.getState());
   return store.subscribe(update);
