@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:browser": "node scripts/browser-smoke.mjs"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

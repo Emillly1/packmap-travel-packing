@@ -1,5 +1,7 @@
 # Delivery Roadmap
 
+Current status: Phase 2 complete. Phase 3 is next.
+
 ## Phase 0: Product foundation
 
 - Product brief, MVP specification, user flows, data schema, technical decisions.

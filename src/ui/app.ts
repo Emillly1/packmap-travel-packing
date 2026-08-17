@@ -1,5 +1,8 @@
 import { TRIP_TEMPLATES } from "../data/templates";
+import { countSelectedCandidates, flattenCandidateItems } from "../engine/planning";
 import { tripDurationDays, validateWizardStep } from "../engine/trip";
+import type { CandidateItem, PackingCategory } from "../models/planning";
+import type { Recommendation, TransportRule } from "../models/packing";
 import type { LaundryFrequency, TemplateId, TransportMode, TripDraft, TripType } from "../models/trip";
 import type { AppState, AppStore } from "../state/store";
 
@@ -36,7 +39,13 @@ function splitBagSetup(value: string): Array<{ name: string; compartments: strin
 }
 
 function renderHeader(state: AppState): string {
-  const status = state.activeDocument ? "旅行已保存" : state.screen === "wizard" ? "草稿自动保存" : "本地优先";
+  const status = state.screen === "review"
+    ? "候选清单待确认"
+    : state.activeDocument
+      ? "旅行已保存"
+      : state.screen === "wizard"
+        ? "草稿自动保存"
+        : "本地优先";
   return `
     <header class="app-header">
       <a class="brand" href="#" data-action="home" aria-label="PackMap 首页">
@@ -221,12 +230,110 @@ function transportLabel(mode: TransportMode): string {
   return TRANSPORT_OPTIONS.find((entry) => entry.id === mode)?.name ?? mode;
 }
 
+const RECOMMENDATION_LABELS: Record<Recommendation, string> = {
+  bring: "建议携带",
+  "buy-local": "落地购买",
+  optional: "可选",
+  skip: "可不带",
+};
+
+const TRANSPORT_RULE_LABELS: Record<TransportRule, string> = {
+  "carry-on": "随身",
+  checked: "托运",
+  none: "不限位置",
+};
+
+function renderCandidateItem(item: CandidateItem): string {
+  return `
+    <label class="candidate-item ${item.selected ? "is-selected" : ""}">
+      <input type="checkbox" data-candidate-id="${item.id}" ${item.selected ? "checked" : ""}>
+      <span class="candidate-check" aria-hidden="true">${item.selected ? "✓" : ""}</span>
+      <span class="candidate-copy">
+        <span class="candidate-title"><strong>${escapeHtml(item.name)}</strong><b>${escapeHtml(item.quantity)}</b></span>
+        <small>${escapeHtml(item.reason)}</small>
+        <span class="candidate-badges">
+          <i class="badge badge--${item.recommendation}">${RECOMMENDATION_LABELS[item.recommendation]}</i>
+          <i class="badge">${TRANSPORT_RULE_LABELS[item.transportRule]}</i>
+          <i class="badge">${item.scope === "shared" ? "共享" : "每人"}</i>
+        </span>
+      </span>
+    </label>
+  `;
+}
+
+function renderReview(state: AppState): string {
+  const result = state.planningResult;
+  const document = state.activeDocument;
+  if (!result || !document) return renderTemplates();
+  const allItems = flattenCandidateItems(result);
+  const selectedCount = countSelectedCandidates(result);
+  const percentage = allItems.length ? Math.round((selectedCount / allItems.length) * 100) : 0;
+
+  return `
+    <main class="review-screen">
+      <section class="review-heading">
+        <div>
+          <span class="eyebrow">PACKING REVIEW / 02</span>
+          <h1>确认你的候选清单</h1>
+          <p>${escapeHtml(document.trip.name)} · ${result.totalDays} 天 · ${result.travelers} 人 · 按 ${result.laundryCycleDays} 天洗衣周期计算</p>
+        </div>
+        <button class="quiet-button" type="button" data-action="edit-trip">返回修改行程</button>
+      </section>
+
+      <section class="review-grid">
+        <nav class="review-categories" aria-label="物品分类">
+          <header>分类</header>
+          ${result.groups.map((group) => {
+            const selected = group.items.filter((item) => item.selected).length;
+            return `<a href="#candidate-${group.id}"><span>${escapeHtml(group.name)}</span><b>${selected}/${group.items.length}</b></a>`;
+          }).join("")}
+        </nav>
+
+        <section class="review-list" aria-label="候选行李清单">
+          ${result.groups.map((group) => {
+            const selected = group.items.filter((item) => item.selected).length;
+            const allSelected = selected === group.items.length;
+            return `
+              <section class="candidate-group" id="candidate-${group.id}">
+                <header>
+                  <div><h2>${escapeHtml(group.name)}</h2><span>${selected} / ${group.items.length} 项</span></div>
+                  <button class="group-toggle" type="button" data-group-id="${group.id}" data-group-selected="${allSelected}">${allSelected ? "全部取消" : "全部选择"}</button>
+                </header>
+                <div class="candidate-items">${group.items.map(renderCandidateItem).join("")}</div>
+              </section>
+            `;
+          }).join("")}
+        </section>
+
+        <aside class="review-summary">
+          <header>本次清单</header>
+          <div class="review-progress" style="--progress: ${percentage}%">
+            <strong>${percentage}%</strong>
+            <span>已选择 ${selectedCount} / ${allItems.length} 项</span>
+          </div>
+          <dl>
+            <div><dt>随身物品</dt><dd>${allItems.filter((item) => item.selected && item.transportRule === "carry-on").length}</dd></div>
+            <div><dt>托运物品</dt><dd>${allItems.filter((item) => item.selected && item.transportRule === "checked").length}</dd></div>
+            <div><dt>落地购买</dt><dd>${allItems.filter((item) => item.selected && item.recommendation === "buy-local").length}</dd></div>
+          </dl>
+          <button class="primary-button review-confirm" type="button" data-action="confirm-candidates" ${selectedCount === 0 ? "disabled" : ""}>确认清单并进入地图</button>
+          <small>之后仍可回来调整选择。</small>
+        </aside>
+      </section>
+    </main>
+  `;
+}
+
 function renderWorkspace(state: AppState): string {
   const document = state.activeDocument;
   if (!document) return renderTemplates();
   const trip = document.trip;
   const duration = tripDurationDays(trip.startDate, trip.endDate);
   const directories = splitBagSetup(trip.bagSetup);
+  const planningResult = state.planningResult;
+  const allCandidates = planningResult ? flattenCandidateItems(planningResult) : [];
+  const selectedCandidates = allCandidates.filter((item) => item.selected);
+  const planningCompletion = planningResult && state.planningConfirmed ? 100 : 0;
   return `
     <main class="workspace-screen">
       <section class="trip-summary">
@@ -235,7 +342,10 @@ function renderWorkspace(state: AppState): string {
           <h1>${escapeHtml(trip.name)}</h1>
           <p>${escapeHtml(trip.origin)} → ${trip.destinations.map(escapeHtml).join("、")}</p>
         </div>
-        <button class="quiet-button" type="button" data-action="edit-trip">编辑旅行</button>
+        <div class="trip-summary__actions">
+          ${planningResult ? '<button class="quiet-button" type="button" data-action="review-candidates">重新筛选</button>' : ""}
+          <button class="quiet-button" type="button" data-action="edit-trip">编辑旅行</button>
+        </div>
       </section>
 
       <section class="workspace-grid">
@@ -267,20 +377,42 @@ function renderWorkspace(state: AppState): string {
 
         <aside class="progress-card">
           <header>准备进度</header>
-          <div class="progress-zero"><strong>0%</strong><span>0 件物品</span></div>
+          <div class="progress-zero"><strong>${planningCompletion}%</strong><span>${selectedCandidates.length} 项候选已确认</span></div>
           <dl>
-            <div><dt>候选清单</dt><dd>待生成</dd></div>
+            <div><dt>候选清单</dt><dd>${planningResult ? "已确认" : "待生成"}</dd></div>
             <div><dt>位置提醒</dt><dd>0</dd></div>
             <div><dt>出发检查</dt><dd>待建立</dd></div>
           </dl>
         </aside>
       </section>
+
+      ${planningResult ? `
+        <section class="confirmed-list">
+          <header>
+            <div><span class="eyebrow">CONFIRMED ITEMS</span><h2>已确认候选清单</h2></div>
+            <strong>${selectedCandidates.length} 项</strong>
+          </header>
+          <div class="confirmed-groups">
+            ${planningResult.groups.map((group) => {
+              const items = group.items.filter((item) => item.selected);
+              if (!items.length) return "";
+              return `<section><h3>${escapeHtml(group.name)}</h3><div>${items.map((item) => `<span>${escapeHtml(item.name)} <b>${escapeHtml(item.quantity)}</b></span>`).join("")}</div></section>`;
+            }).join("")}
+          </div>
+        </section>
+      ` : ""}
     </main>
   `;
 }
 
 function renderApp(root: HTMLElement, state: AppState): void {
-  const screen = state.screen === "templates" ? renderTemplates() : state.screen === "wizard" ? renderWizard(state) : renderWorkspace(state);
+  const screen = state.screen === "templates"
+    ? renderTemplates()
+    : state.screen === "wizard"
+      ? renderWizard(state)
+      : state.screen === "review"
+        ? renderReview(state)
+        : renderWorkspace(state);
   root.innerHTML = `${renderHeader(state)}${screen}<div class="status-region" role="status" aria-live="polite"></div>`;
 }
 
@@ -346,9 +478,21 @@ function bindEvents(root: HTMLElement, store: AppStore): void {
   });
 
   root.querySelector<HTMLElement>('[data-action="edit-trip"]')?.addEventListener("click", () => store.dispatch({ type: "EDIT_TRIP" }));
+  root.querySelector<HTMLElement>('[data-action="review-candidates"]')?.addEventListener("click", () => store.dispatch({ type: "REVIEW_CANDIDATES" }));
+  root.querySelector<HTMLElement>('[data-action="confirm-candidates"]')?.addEventListener("click", () => store.dispatch({ type: "CONFIRM_CANDIDATES" }));
+  root.querySelectorAll<HTMLInputElement>("[data-candidate-id]").forEach((input) => {
+    input.addEventListener("change", () => store.dispatch({ type: "TOGGLE_CANDIDATE", itemId: input.dataset.candidateId ?? "" }));
+  });
+  root.querySelectorAll<HTMLButtonElement>("[data-group-id]").forEach((button) => {
+    button.addEventListener("click", () => store.dispatch({
+      type: "SET_GROUP_SELECTION",
+      category: button.dataset.groupId as PackingCategory,
+      selected: button.dataset.groupSelected !== "true",
+    }));
+  });
   root.querySelector<HTMLElement>('[data-action="close-wizard"]')?.addEventListener("click", () => {
     syncWizardStep(root, store);
-    if (store.getState().activeDocument) store.dispatch({ type: "COMPLETE_SETUP" });
+    if (store.getState().activeDocument) store.dispatch({ type: "CANCEL_EDIT" });
     else store.dispatch({ type: "RESET_PROJECT" });
   });
   root.querySelector<HTMLElement>('[data-action="home"]')?.addEventListener("click", (event) => event.preventDefault());

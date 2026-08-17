@@ -2,7 +2,7 @@
 
 PackMap turns trip details into an actionable packing map: what to bring, what to buy locally, and where every item belongs.
 
-This repository is the maintainable product rewrite of the original single-file organizer. The first milestone preserves the proven workflow while separating product rules, state, storage, and UI.
+This repository is the maintainable product rewrite of the original single-file organizer. The current product slice includes trip templates, guided setup, deterministic packing recommendations, candidate review, and a first-level luggage map.
 
 ## Product principles
 
@@ -27,6 +27,12 @@ npm test
 npm run build
 ```
 
+With the Vite server and a Chrome remote-debugging session running, the repeatable browser smoke test is:
+
+```bash
+npm run test:browser
+```
+
 ## Repository layout
 
 ```text
@@ -40,6 +46,7 @@ src/state/            Store, persistence, and migrations
 src/ui/               Screen-level UI modules
 src/styles/           Design tokens, foundations, components, responsive rules
 tests/                Unit and contract tests
+scripts/              Repeatable end-to-end browser checks
 ```
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) for the delivery sequence.
