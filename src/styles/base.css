@@ -1,0 +1,29 @@
+* { box-sizing: border-box; }
+html { min-width: 320px; background: var(--canvas); }
+body { min-width: 320px; min-height: 100vh; margin: 0; background: var(--canvas); }
+button, input, textarea, select { font: inherit; letter-spacing: 0; }
+button { color: inherit; cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: 0.42; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, a:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--green) 28%, transparent);
+  outline-offset: 2px;
+}
+h1, h2, h3, p { overflow-wrap: anywhere; }
+img { max-width: 100%; }
+.eyebrow { color: var(--coral); font: 750 11px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.primary-button, .quiet-button, .icon-button {
+  min-height: 40px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--paper);
+  transition: transform 160ms var(--ease-out), box-shadow 160ms ease, border-color 160ms ease;
+}
+.primary-button { padding: 0 22px; border-color: var(--ink); background: var(--ink); color: white; font-weight: 750; }
+.quiet-button { padding: 0 14px; }
+.icon-button { width: 38px; padding: 0; font-size: 20px; }
+@media (hover: hover) and (pointer: fine) {
+  .primary-button:hover, .quiet-button:hover, .icon-button:hover { transform: translateY(-1px); box-shadow: var(--shadow-soft); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 60ms !important; }
+}
