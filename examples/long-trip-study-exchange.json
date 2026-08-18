@@ -1,0 +1,263 @@
+{
+  "schema_version": "1.0",
+  "trip": {
+    "name": "Six-month multi-city study trip",
+    "origin": "East Asia",
+    "destinations": ["Summer course city", "Rail travel base", "Exchange city", "Cold-weather destination"],
+    "start_date": "2026-07-01",
+    "end_date": "2026-12-22",
+    "travelers": 1,
+    "trip_type": "study_exchange",
+    "laundry_frequency": "weekly",
+    "notes": "Student-casual style, one formal event, occasional hiking, skincare and makeup, 20% shopping buffer.",
+    "stages": [
+      {
+        "id": "summer-course",
+        "name": "Summer language course",
+        "destinations": ["Summer course city"],
+        "start_date": "2026-07-01",
+        "end_date": "2026-07-31",
+        "climate": ["warm", "sun", "occasional rain"],
+        "activities": ["classes", "city trips", "swimming"]
+      },
+      {
+        "id": "rail-travel",
+        "name": "Rail travel from a city base",
+        "destinations": ["Rail travel base", "Nearby cities"],
+        "start_date": "2026-08-01",
+        "end_date": "2026-09-12",
+        "climate": ["warm", "variable rain"],
+        "activities": ["rail travel", "walking", "day trips"]
+      },
+      {
+        "id": "exchange-term",
+        "name": "University exchange term",
+        "destinations": ["Exchange city"],
+        "start_date": "2026-09-13",
+        "end_date": "2026-12-14",
+        "climate": ["cool", "cold", "rain", "wind"],
+        "activities": ["classes", "orientation", "formal event"]
+      },
+      {
+        "id": "winter-trip",
+        "name": "Cold-weather outdoor trip",
+        "destinations": ["Cold-weather destination"],
+        "start_date": "2026-12-15",
+        "end_date": "2026-12-22",
+        "climate": ["cold", "wind", "rain or snow"],
+        "activities": ["outdoor sightseeing", "short hikes"]
+      }
+    ]
+  },
+  "containers": [
+    {
+      "id": "checked-suitcase-a",
+      "type": "luggage",
+      "name": "Checked suitcase A - first stage",
+      "transport": "checked",
+      "children": [
+        {
+          "id": "suitcase-a-open-side",
+          "type": "compartment",
+          "name": "Open side - summer access",
+          "children": [
+            {
+              "id": "summer-clothing-cube",
+              "type": "bag",
+              "name": "Summer clothing cube",
+              "children": [
+                {"id": "short-sleeve-tops", "type": "item", "name": "Short-sleeve tops", "quantity": "7", "category": "clothes", "packed": false, "transport_rule": "none", "access": "daily", "stage_ids": ["summer-course", "rail-travel"], "recommendation": "bring", "reason": "One weekly laundry cycle"},
+                {"id": "light-long-sleeve-tops", "type": "item", "name": "Light long-sleeve tops", "quantity": "2", "category": "clothes", "packed": false, "transport_rule": "none", "access": "daily", "stage_ids": ["summer-course", "rail-travel"], "recommendation": "bring", "reason": "Sun, air conditioning, and layering"},
+                {"id": "summer-bottoms", "type": "item", "name": "Summer bottoms", "quantity": "4", "category": "clothes", "packed": false, "transport_rule": "none", "access": "daily", "stage_ids": ["summer-course", "rail-travel"], "recommendation": "bring", "reason": "Mix-and-match weekly rotation"},
+                {"id": "swimwear", "type": "item", "name": "Swimwear", "quantity": "1", "category": "clothes", "packed": false, "transport_rule": "none", "access": "later", "stage_ids": ["summer-course"], "recommendation": "bring", "reason": "Swimming is planned"}
+              ]
+            },
+            {
+              "id": "basics-cube-a",
+              "type": "bag",
+              "name": "Split basics cube A",
+              "children": [
+                {"id": "underwear-a", "type": "item", "name": "Underwear", "quantity": "5", "category": "clothes", "packed": false, "transport_rule": "none", "access": "daily", "stage_ids": ["summer-course", "rail-travel", "exchange-term", "winter-trip"], "recommendation": "bring", "reason": "Split across checked bags"},
+                {"id": "socks-a", "type": "item", "name": "Everyday socks", "quantity": "5 pairs", "category": "clothes", "packed": false, "transport_rule": "none", "access": "daily", "stage_ids": ["summer-course", "rail-travel", "exchange-term"], "recommendation": "bring", "reason": "Split across checked bags"},
+                {"id": "sleepwear", "type": "item", "name": "Sleepwear", "quantity": "1 set", "category": "clothes", "packed": false, "transport_rule": "none", "access": "first_night", "stage_ids": ["summer-course", "rail-travel", "exchange-term"], "recommendation": "bring", "reason": "First-night access"}
+              ]
+            },
+            {"id": "comfortable-daily-shoes", "type": "item", "name": "Comfortable daily shoes in shoe bag", "quantity": "1 pair", "category": "clothes", "packed": false, "transport_rule": "none", "access": "daily", "stage_ids": ["summer-course", "rail-travel", "exchange-term"], "recommendation": "bring", "reason": "Frequent walking"}
+          ]
+        },
+        {
+          "id": "suitcase-a-zip-side",
+          "type": "compartment",
+          "name": "Zip side - toiletries and household",
+          "children": [
+            {
+              "id": "checked-toiletries-bag",
+              "type": "bag",
+              "name": "Leakproof full-size toiletries bag",
+              "children": [
+                {"id": "full-size-shampoo-conditioner", "type": "item", "name": "Full-size shampoo and conditioner", "quantity": "1 set", "category": "toiletries", "packed": false, "transport_rule": "checked", "access": "first_night", "risk": "liquid_leak", "recommendation": "bring", "reason": "Preferred products; double-bag"},
+                {"id": "body-lotion", "type": "item", "name": "Body lotion", "quantity": "1 bottle", "category": "toiletries", "packed": false, "transport_rule": "checked", "access": "first_night", "risk": "liquid_leak", "recommendation": "buy_local", "reason": "Bulky and widely available"},
+                {"id": "laundry-supplies", "type": "item", "name": "Laundry supplies", "quantity": "First 2 washes", "category": "daily", "packed": false, "transport_rule": "checked", "access": "first_night", "recommendation": "bring", "reason": "Buy the rest locally"}
+              ]
+            },
+            {"id": "shower-slippers", "type": "item", "name": "Shower slippers", "quantity": "1 pair", "category": "daily", "packed": false, "transport_rule": "none", "access": "first_night", "recommendation": "bring", "reason": "Dorm and shared bathroom use"},
+            {"id": "foldable-tote", "type": "item", "name": "Foldable shopping tote", "quantity": "1", "category": "daily", "packed": false, "transport_rule": "none", "access": "daily", "recommendation": "bring", "reason": "Groceries and day trips"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "checked-suitcase-b",
+      "type": "luggage",
+      "name": "Checked suitcase B - later stages",
+      "transport": "checked",
+      "children": [
+        {
+          "id": "suitcase-b-open-side",
+          "type": "compartment",
+          "name": "Open side - cold-weather module",
+          "children": [
+            {
+              "id": "cold-weather-cube",
+              "type": "bag",
+              "name": "Cold-weather cube - keep closed until exchange",
+              "children": [
+                {"id": "thermal-base-layers", "type": "item", "name": "Thermal base layers", "quantity": "2 sets", "category": "clothes", "packed": false, "transport_rule": "none", "access": "later", "stage_ids": ["exchange-term", "winter-trip"], "recommendation": "bring", "reason": "Cold and windy stages"},
+                {"id": "warm-midlayer", "type": "item", "name": "Warm midlayer", "quantity": "1", "category": "clothes", "packed": false, "transport_rule": "none", "access": "later", "stage_ids": ["exchange-term", "winter-trip"], "recommendation": "bring", "reason": "Layering across seasons"},
+                {"id": "rain-shell", "type": "item", "name": "Waterproof rain shell", "quantity": "1", "category": "clothes", "packed": false, "transport_rule": "none", "access": "later", "stage_ids": ["exchange-term", "winter-trip"], "recommendation": "bring", "reason": "Rain and wind"},
+                {"id": "packable-insulated-jacket", "type": "item", "name": "Packable insulated jacket", "quantity": "1", "category": "clothes", "packed": false, "transport_rule": "none", "access": "later", "stage_ids": ["exchange-term", "winter-trip"], "recommendation": "bring", "reason": "Cold-weather outer layer"},
+                {"id": "wool-socks", "type": "item", "name": "Warm or wool socks", "quantity": "3 pairs", "category": "clothes", "packed": false, "transport_rule": "none", "access": "later", "stage_ids": ["winter-trip"], "recommendation": "bring", "reason": "Cold outdoor activity"}
+              ]
+            },
+            {
+              "id": "basics-cube-b",
+              "type": "bag",
+              "name": "Split basics cube B",
+              "children": [
+                {"id": "underwear-b", "type": "item", "name": "Underwear", "quantity": "5", "category": "clothes", "packed": false, "transport_rule": "none", "access": "any", "recommendation": "bring", "reason": "Second half of split supply"},
+                {"id": "socks-b", "type": "item", "name": "Everyday socks", "quantity": "5 pairs", "category": "clothes", "packed": false, "transport_rule": "none", "access": "any", "recommendation": "bring", "reason": "Second half of split supply"}
+              ]
+            }
+          ]
+        },
+        {
+          "id": "suitcase-b-zip-side",
+          "type": "compartment",
+          "name": "Zip side - formal and outdoor",
+          "children": [
+            {
+              "id": "formal-outfit-bag",
+              "type": "bag",
+              "name": "Formal event bag",
+              "children": [
+                {"id": "formal-outfit", "type": "item", "name": "Photo-ready formal outfit", "quantity": "1", "category": "clothes", "packed": false, "transport_rule": "none", "access": "later", "stage_ids": ["exchange-term"], "recommendation": "bring", "reason": "One formal event"},
+                {"id": "simple-accessories", "type": "item", "name": "Simple accessories", "quantity": "1 set", "category": "beauty", "packed": false, "transport_rule": "carry_on", "access": "later", "risk": "valuable", "stage_ids": ["exchange-term"], "recommendation": "bring", "reason": "Keep valuables in backpack instead"}
+              ]
+            },
+            {"id": "hiking-shoes", "type": "item", "name": "Hiking shoes in shoe bag", "quantity": "1 pair", "category": "clothes", "packed": false, "transport_rule": "none", "access": "later", "stage_ids": ["winter-trip"], "recommendation": "bring", "reason": "Planned short hikes"},
+            {"id": "shopping-buffer", "type": "item", "name": "Reserved empty space", "quantity": "At least 20%", "category": "other", "packed": true, "transport_rule": "none", "access": "any", "recommendation": "bring", "reason": "Purchases and airline weight buffer"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "personal-backpack",
+      "type": "luggage",
+      "name": "25L personal backpack",
+      "transport": "carry_on",
+      "children": [
+        {
+          "id": "backpack-main",
+          "type": "compartment",
+          "name": "Main compartment",
+          "children": [
+            {
+              "id": "document-wallet",
+              "type": "bag",
+              "name": "Document wallet",
+              "children": [
+                {"id": "passport", "type": "item", "name": "Passport and required visas", "quantity": "1 set", "category": "documents", "packed": false, "transport_rule": "carry_on", "access": "airport", "risk": "valuable", "recommendation": "bring", "reason": "Required for travel"},
+                {"id": "document-copies", "type": "item", "name": "Document copies and offline screenshots", "quantity": "1 set", "category": "documents", "packed": false, "transport_rule": "carry_on", "access": "airport", "recommendation": "bring", "reason": "Arrival and emergency backup"},
+                {"id": "wallet-cards-cash", "type": "item", "name": "Wallet, cards, and small cash", "quantity": "1 set", "category": "documents", "packed": false, "transport_rule": "carry_on", "access": "airport", "risk": "valuable", "recommendation": "bring", "reason": "Transit access"}
+              ]
+            },
+            {
+              "id": "electronics-pouch",
+              "type": "bag",
+              "name": "Electronics pouch",
+              "children": [
+                {"id": "phone-laptop-tablet", "type": "item", "name": "Phone, laptop, and tablet", "quantity": "1 each as needed", "category": "electronics", "packed": false, "transport_rule": "carry_on", "access": "airport", "risk": "valuable", "recommendation": "bring", "reason": "Study and travel"},
+                {"id": "chargers-cables", "type": "item", "name": "Chargers and cables", "quantity": "1 set", "category": "electronics", "packed": false, "transport_rule": "carry_on", "access": "airport", "recommendation": "bring", "reason": "Needed during transit"},
+                {"id": "power-bank", "type": "item", "name": "Power bank", "quantity": "1", "category": "electronics", "packed": false, "transport_rule": "carry_on", "access": "airport", "risk": "battery", "recommendation": "bring", "reason": "Must not be checked"},
+                {"id": "plug-adapter", "type": "item", "name": "Travel plug adapter", "quantity": "1", "category": "electronics", "packed": false, "transport_rule": "carry_on", "access": "first_night", "recommendation": "bring", "reason": "First-night charging"}
+              ]
+            },
+            {
+              "id": "delay-kit",
+              "type": "bag",
+              "name": "Delay and first-night kit",
+              "children": [
+                {"id": "change-of-clothes", "type": "item", "name": "Light change of clothes and underwear", "quantity": "1 set", "category": "clothes", "packed": false, "transport_rule": "carry_on", "access": "first_night", "recommendation": "bring", "reason": "Checked-bag delay protection"},
+                {"id": "travel-toiletries", "type": "item", "name": "Travel-size basic toiletries", "quantity": "1 set", "category": "toiletries", "packed": false, "transport_rule": "carry_on", "access": "first_night", "risk": "liquid_leak", "recommendation": "bring", "reason": "First night without checked bags"},
+                {"id": "essential-medication", "type": "item", "name": "Personal essential medication", "quantity": "At least 3 days plus prescription copy", "category": "medicine", "packed": false, "transport_rule": "carry_on", "access": "airport", "recommendation": "bring", "reason": "Delay-critical"},
+                {"id": "glasses", "type": "item", "name": "Glasses or essential vision supplies", "quantity": "1 set", "category": "daily", "packed": false, "transport_rule": "carry_on", "access": "airport", "recommendation": "bring", "reason": "Do not place essential vision items only in checked baggage"}
+              ]
+            },
+            {"id": "valuable-accessories", "type": "item", "name": "Valuable accessories", "quantity": "1 small pouch", "category": "beauty", "packed": false, "transport_rule": "carry_on", "access": "later", "risk": "valuable", "recommendation": "bring", "reason": "Move here from checked suitcase"}
+          ]
+        },
+        {
+          "id": "backpack-quick-access",
+          "type": "compartment",
+          "name": "Quick-access pocket",
+          "children": [
+            {"id": "boarding-pass", "type": "item", "name": "Boarding pass or offline check-in screenshot", "quantity": "1", "category": "documents", "packed": false, "transport_rule": "carry_on", "access": "airport", "recommendation": "bring", "reason": "Airport access"},
+            {"id": "daily-comfort-kit", "type": "item", "name": "Tissues, lip balm, hand cream, and mask", "quantity": "1 small set", "category": "daily", "packed": false, "transport_rule": "carry_on", "access": "daily", "recommendation": "bring", "reason": "Transit comfort"},
+            {"id": "empty-water-bottle", "type": "item", "name": "Empty reusable water bottle", "quantity": "1", "category": "daily", "packed": false, "transport_rule": "carry_on", "access": "airport", "recommendation": "optional", "reason": "Fill after security"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pending",
+      "type": "luggage",
+      "name": "Pending decisions",
+      "transport": "none",
+      "children": [
+        {
+          "id": "buy-locally",
+          "type": "compartment",
+          "name": "Buy locally",
+          "children": [
+            {"id": "bulk-laundry-products", "type": "item", "name": "Bulk laundry detergent", "quantity": "1", "category": "daily", "packed": false, "transport_rule": "none", "access": "later", "recommendation": "buy_local", "reason": "Bulky and easy to replace"},
+            {"id": "household-consumables", "type": "item", "name": "Household consumables", "quantity": "As needed", "category": "daily", "packed": false, "transport_rule": "none", "access": "later", "recommendation": "buy_local", "reason": "Wait until accommodation needs are known"}
+          ]
+        },
+        {
+          "id": "optional-items",
+          "type": "compartment",
+          "name": "Optional",
+          "children": [
+            {"id": "hair-tool", "type": "item", "name": "Hair styling tool", "quantity": "1", "category": "beauty", "packed": false, "transport_rule": "checked", "access": "later", "recommendation": "optional", "reason": "Bring only if voltage-compatible and frequently used"},
+            {"id": "extra-dressy-shoes", "type": "item", "name": "Extra dressy shoes", "quantity": "1 pair", "category": "clothes", "packed": false, "transport_rule": "none", "access": "later", "recommendation": "skip", "reason": "One formal event does not justify bulky duplicate shoes"}
+          ]
+        }
+      ]
+    }
+  ],
+  "departure_checks": [
+    {"id": "passport-check", "name": "Passport and visas physically in personal item", "checked": false},
+    {"id": "offline-arrival", "name": "Accommodation, emergency contact, and arrival route saved offline", "checked": false},
+    {"id": "baggage-through-check", "name": "Baggage through-check and transfer procedure confirmed", "checked": false},
+    {"id": "allowance", "name": "Each bag weighed with airline buffer", "checked": false},
+    {"id": "battery-check", "name": "Power bank and spare batteries in carry-on", "checked": false},
+    {"id": "locks-tags", "name": "Checked bags locked and labeled", "checked": false},
+    {"id": "home-check", "name": "Doors, windows, water, power, and rubbish checked", "checked": false}
+  ],
+  "warnings": [
+    {"item": "Simple accessories", "issue": "Marked carry-on but currently listed in a checked suitcase; move to backpack.", "severity": "high"},
+    {"item": "Full-size liquids", "issue": "Double-bag and keep away from electronics.", "severity": "medium"},
+    {"item": "Checked suitcases", "issue": "Keep at least 20% volume and airline weight buffer for purchases.", "severity": "medium"},
+    {"item": "Airline rules", "issue": "Verify current cabin dimensions, baggage weights, liquids, batteries, and restricted items with each carrier.", "severity": "high"}
+  ]
+}

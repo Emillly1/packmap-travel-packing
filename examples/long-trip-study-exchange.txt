@@ -1,0 +1,67 @@
+PackMap 行李位置地图
+导出时间：2026/8/12 12:00:00
+
+Checked suitcase A - first stage
+  Open side - summer access
+    Summer clothing cube
+      [未装] Short-sleeve tops · 7
+      [未装] Light long-sleeve tops · 2
+      [未装] Summer bottoms · 4
+      [未装] Swimwear · 1
+    Split basics cube A
+      [未装] Underwear · 5
+      [未装] Everyday socks · 5 pairs
+      [未装] Sleepwear · 1 set
+    [未装] Comfortable daily shoes in shoe bag · 1 pair
+  Zip side - toiletries and household
+    Leakproof full-size toiletries bag
+      [未装] Full-size shampoo and conditioner · 1 set（必须托运）
+      [未装] Body lotion · 1 bottle（必须托运）
+      [未装] Laundry supplies · First 2 washes（必须托运）
+    [未装] Shower slippers · 1 pair
+    [未装] Foldable shopping tote · 1
+Checked suitcase B - later stages
+  Open side - cold-weather module
+    Cold-weather cube - keep closed until exchange
+      [未装] Thermal base layers · 2 sets
+      [未装] Warm midlayer · 1
+      [未装] Waterproof rain shell · 1
+      [未装] Packable insulated jacket · 1
+      [未装] Warm or wool socks · 3 pairs
+    Split basics cube B
+      [未装] Underwear · 5
+      [未装] Everyday socks · 5 pairs
+  Zip side - formal and outdoor
+    Formal event bag
+      [未装] Photo-ready formal outfit · 1
+      [未装] Simple accessories · 1 set（必须随身）
+    [未装] Hiking shoes in shoe bag · 1 pair
+    [已装] Reserved empty space · At least 20%
+25L personal backpack
+  Main compartment
+    Document wallet
+      [未装] Passport and required visas · 1 set（必须随身）
+      [未装] Document copies and offline screenshots · 1 set（必须随身）
+      [未装] Wallet, cards, and small cash · 1 set（必须随身）
+    Electronics pouch
+      [未装] Phone, laptop, and tablet · 1 each as needed（必须随身）
+      [未装] Chargers and cables · 1 set（必须随身）
+      [未装] Power bank · 1（必须随身）
+      [未装] Travel plug adapter · 1（必须随身）
+    Delay and first-night kit
+      [未装] Light change of clothes and underwear · 1 set（必须随身）
+      [未装] Travel-size basic toiletries · 1 set（必须随身）
+      [未装] Personal essential medication · At least 3 days plus prescription copy（必须随身）
+      [未装] Glasses or essential vision supplies · 1 set（必须随身）
+    [未装] Valuable accessories · 1 small pouch（必须随身）
+  Quick-access pocket
+    [未装] Boarding pass or offline check-in screenshot · 1（必须随身）
+    [未装] Tissues, lip balm, hand cream, and mask · 1 small set（必须随身）
+    [未装] Empty reusable water bottle · 1（必须随身）
+Pending decisions
+  Buy locally
+    [未装] Bulk laundry detergent · 1
+    [未装] Household consumables · As needed
+  Optional
+    [未装] Hair styling tool · 1（必须托运）
+    [未装] Extra dressy shoes · 1 pair

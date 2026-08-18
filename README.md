@@ -1,67 +1,94 @@
 # PackMap
 
-PackMap turns trip details into an actionable packing map: what to bring, what to buy locally, and where every item belongs.
+PackMap combines a local-first travel packing application with a reusable Codex skill. It turns trip details into a practical packing list, then maps every item to a specific suitcase, compartment, or pouch.
+
+PackMap 将旅行时间、目的地、人数、交通方式和洗衣习惯转化为可筛选的行李清单，并继续安排每件物品应该放进哪个箱包、哪一面和哪个收纳袋。
 
 Current release: `0.2.0-beta.1`.
 
-Public Beta: `https://emillly1.github.io/packmap-travel-packing/` (available after the first Pages deployment). Feedback is collected through the repository's structured Beta issue form.
+Public Beta: [emillly1.github.io/packmap-travel-packing](https://emillly1.github.io/packmap-travel-packing/) (available after the first Pages deployment).
 
-This repository is the maintainable product rewrite of the original single-file organizer. The current product slice includes trip templates, guided setup, deterministic packing recommendations, candidate review, a dedicated organization-confirmation step, an interactive luggage map, transport safety review, departure checks, and local-first data portability.
+## Product flow
 
-The packing workflow automatically proposes nested pouches before the final map. Users can add items or pouches directly inside any luggage level, rename or move pouches, tap an item to choose its destination, remove a pouch without deleting its contents, and keep deliberately loose items loose. The final workspace supports full-path search, packed status, drag-and-drop movement, touch-friendly destination controls, map editing, and ten-step undo.
+1. Choose a trip template or start blank.
+2. Describe the trip, transport, habits, and available luggage.
+3. Review, add, remove, and edit candidate items.
+4. Confirm proposed pouches and luggage distribution.
+5. Pack from the nested location map.
+6. Run transport safety and departure checks.
+7. Search, import, export, or print the finished plan.
 
-The primary flow is: choose a template -> describe the trip -> review candidate items -> confirm the organization plan -> pack from the location map -> run safety and departure checks -> export or print.
+The application works without AI, accounts, analytics, or a backend. Trip data stays in browser local storage unless the user explicitly exports it. JSON export is lossless; readable TXT and indented exports from the original organizer can also be imported.
 
-The release workspace also provides transport-aware warnings, a reusable departure checklist, lossless JSON and readable TXT exports, validated imports, legacy `1.0` migration, indented-text migration from the original organizer, a dedicated pre-import recovery point, and a print-ready packing report.
-
-Original organizer exports such as `欧洲行李位置地图` can be pasted directly into Data & Print. PackMap reconstructs luggage, compartments, nested pouches, item quantities, and packed status, while normalizing the old `袋子面` label to `拉链面`.
-
-## Product principles
-
-- Start with the real planning workflow, not a marketing landing page.
-- Keep rule-based planning useful without AI.
-- Treat the luggage map as the source of truth, not a flat checklist.
-- Preserve user data across releases through versioned schemas and migrations.
-- Keep medical, immigration, airline, and restricted-item guidance clearly scoped.
-
-## Development
+## Use the application
 
 ```bash
 npm install
 npm run dev
 ```
 
-Other checks:
+The `main` branch is verified by CI and deployed to GitHub Pages. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the production path and rollback procedure.
+
+## Install the skill
+
+Clone the repository and copy the skill directory into your Codex skills directory:
+
+```bash
+git clone https://github.com/Emillly1/packmap-travel-packing.git
+cd packmap-travel-packing
+mkdir -p ~/.codex/skills
+cp -R skills/packmap-travel-packing ~/.codex/skills/
+```
+
+Then invoke `$packmap-travel-packing` with a trip description. For example:
+
+```text
+Use $packmap-travel-packing to plan a six-month multi-city study trip.
+I will travel through warm and cold seasons, do laundry weekly, take two
+checked suitcases and one backpack, and want room for shopping.
+```
+
+Four anonymous scenarios are available in [examples/SCENARIOS.md](examples/SCENARIOS.md), including a weekend city break, family beach holiday, winter business trip, and six-month study journey.
+
+## Convert skill output
+
+```bash
+python3 skills/packmap-travel-packing/scripts/packmap_json_to_text.py \
+  examples/long-trip-study-exchange.json \
+  -o examples/long-trip-study-exchange.txt
+```
+
+## Verification
 
 ```bash
 npm run typecheck
 npm test
 npm run build
 npm run check:budget
+python3 -m unittest discover -s tests -v
 ```
 
-The `main` branch is verified by CI and deployed to GitHub Pages. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the production path and rollback procedure.
-
-With the Vite server and a Chrome remote-debugging session running, the repeatable browser smoke test is:
-
-```bash
-npm run test:browser
-```
+With the Vite server and a Chrome remote-debugging session running, the repeatable end-to-end test is `npm run test:browser`.
 
 ## Repository layout
 
 ```text
-docs/                 Product, UX, data, technical, and release decisions
-.github/workflows/     Continuous verification for every change
-public/               Static artwork and public assets
-src/data/             Templates and catalog data
-src/engine/           Pure planning and validation rules
-src/models/           Versioned domain types
-src/state/            Store, persistence, and migrations
-src/ui/               Screen-level UI modules
-src/styles/           Design tokens, foundations, components, responsive rules
-tests/                Unit and contract tests
-scripts/              Repeatable end-to-end browser checks
+src/                              Maintainable TypeScript application
+public/                           Static artwork and public assets
+docs/                             Product, UX, data, and release decisions
+skills/packmap-travel-packing/    Reusable Codex skill
+examples/                         Anonymous skill scenarios in JSON and TXT
+tests/                            TypeScript and Python contract tests
+scripts/                          Browser and performance checks
+web/index.html                    Preserved original single-file organizer
 ```
 
-See [docs/ROADMAP.md](docs/ROADMAP.md) for the delivery sequence.
+The old repository state is permanently preserved in the `archive/prototype-v1` branch and `prototype-v1` tag.
+
+## Safety scope
+
+PackMap provides packing organization, not medical, legal, immigration, or airline clearance. Verify current airline, border, medication, battery, liquid, and restricted-item rules with the relevant official source.
+
+## License
+
+MIT

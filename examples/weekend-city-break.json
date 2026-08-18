@@ -1,0 +1,90 @@
+{
+  "schema_version": "1.0",
+  "trip": {
+    "name": "Three-day city break",
+    "origin": "London",
+    "destinations": ["Lisbon"],
+    "start_date": "2026-09-18",
+    "end_date": "2026-09-20",
+    "travelers": 2,
+    "trip_type": "leisure",
+    "laundry_frequency": "often",
+    "notes": "Cabin baggage only, extensive walking, one restaurant dinner.",
+    "stages": [
+      {
+        "id": "city-break",
+        "name": "Lisbon weekend",
+        "destinations": ["Lisbon"],
+        "start_date": "2026-09-18",
+        "end_date": "2026-09-20",
+        "climate": ["warm", "sun", "possible rain"],
+        "activities": ["walking", "museum", "restaurant"]
+      }
+    ]
+  },
+  "containers": [
+    {
+      "id": "shared-cabin-roller",
+      "type": "luggage",
+      "name": "Shared cabin roller",
+      "transport": "carry_on",
+      "children": [
+        {
+          "id": "roller-main",
+          "type": "compartment",
+          "name": "Main compartment",
+          "children": [
+            {
+              "id": "traveler-one-cube",
+              "type": "bag",
+              "name": "Traveler one clothing cube",
+              "children": [
+                {"id": "traveler-one-tops", "type": "item", "name": "Tops", "quantity": "3", "category": "clothes", "packed": false, "transport_rule": "none", "access": "daily", "stage_ids": ["city-break"], "recommendation": "bring", "reason": "Three-day trip"},
+                {"id": "traveler-one-underwear", "type": "item", "name": "Underwear and socks", "quantity": "3 sets", "category": "clothes", "packed": false, "transport_rule": "none", "access": "daily", "stage_ids": ["city-break"], "recommendation": "bring", "reason": "One set per day"}
+              ]
+            },
+            {
+              "id": "traveler-two-cube",
+              "type": "bag",
+              "name": "Traveler two clothing cube",
+              "children": [
+                {"id": "traveler-two-tops", "type": "item", "name": "Tops", "quantity": "3", "category": "clothes", "packed": false, "transport_rule": "none", "access": "daily", "stage_ids": ["city-break"], "recommendation": "bring", "reason": "Three-day trip"},
+                {"id": "traveler-two-underwear", "type": "item", "name": "Underwear and socks", "quantity": "3 sets", "category": "clothes", "packed": false, "transport_rule": "none", "access": "daily", "stage_ids": ["city-break"], "recommendation": "bring", "reason": "One set per day"}
+              ]
+            },
+            {"id": "shared-evening-layer", "type": "item", "name": "Light evening layer", "quantity": "2", "category": "clothes", "packed": false, "transport_rule": "none", "access": "daily", "recommendation": "bring", "reason": "Cool evenings"},
+            {"id": "shared-liquid-bag", "type": "item", "name": "Airport-compliant liquid bag", "quantity": "1 shared set", "category": "toiletries", "packed": false, "transport_rule": "carry_on", "access": "airport", "risk": "liquid_leak", "recommendation": "bring", "reason": "Cabin baggage only"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "personal-crossbody",
+      "type": "luggage",
+      "name": "Personal crossbody bag",
+      "transport": "carry_on",
+      "children": [
+        {
+          "id": "crossbody-main",
+          "type": "compartment",
+          "name": "Quick access",
+          "children": [
+            {"id": "two-passports", "type": "item", "name": "Passports and travel documents", "quantity": "2 sets", "category": "documents", "packed": false, "transport_rule": "carry_on", "access": "airport", "risk": "valuable", "recommendation": "bring", "reason": "One set per traveler"},
+            {"id": "phones", "type": "item", "name": "Phones", "quantity": "2", "category": "electronics", "packed": false, "transport_rule": "carry_on", "access": "airport", "risk": "valuable", "recommendation": "bring", "reason": "Navigation and tickets"},
+            {"id": "power-bank-weekend", "type": "item", "name": "Power bank", "quantity": "1 shared", "category": "electronics", "packed": false, "transport_rule": "carry_on", "access": "airport", "risk": "battery", "recommendation": "bring", "reason": "Long walking days"},
+            {"id": "compact-umbrella", "type": "item", "name": "Compact umbrella", "quantity": "1", "category": "daily", "packed": false, "transport_rule": "none", "access": "daily", "recommendation": "bring", "reason": "Possible rain"},
+            {"id": "comfortable-shoes-worn", "type": "item", "name": "Comfortable walking shoes", "quantity": "2 pairs worn", "category": "clothes", "packed": true, "transport_rule": "none", "access": "daily", "recommendation": "bring", "reason": "Extensive walking"}
+          ]
+        }
+      ]
+    }
+  ],
+  "departure_checks": [
+    {"id": "documents", "name": "Both travelers have passports and boarding passes", "checked": false},
+    {"id": "liquids", "name": "Cabin liquids meet the current airline and airport rules", "checked": false},
+    {"id": "cabin-size", "name": "Shared roller meets cabin size and weight limits", "checked": false}
+  ],
+  "warnings": [
+    {"item": "Cabin baggage", "issue": "Verify the operating airline's current cabin dimensions and weight limit.", "severity": "high"}
+  ]
+}

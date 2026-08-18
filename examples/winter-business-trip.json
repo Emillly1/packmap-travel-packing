@@ -1,0 +1,110 @@
+{
+  "schema_version": "1.0",
+  "trip": {
+    "name": "Five-day winter business trip",
+    "origin": "Singapore",
+    "destinations": ["Berlin"],
+    "start_date": "2026-11-09",
+    "end_date": "2026-11-13",
+    "travelers": 1,
+    "trip_type": "business",
+    "laundry_frequency": "rare",
+    "notes": "Client meetings, one presentation, cold rain, cabin bag plus a small checked case.",
+    "stages": [
+      {
+        "id": "business-week",
+        "name": "Berlin meetings",
+        "destinations": ["Berlin"],
+        "start_date": "2026-11-09",
+        "end_date": "2026-11-13",
+        "climate": ["cold", "rain", "wind"],
+        "activities": ["meetings", "presentation", "formal dinner"]
+      }
+    ]
+  },
+  "containers": [
+    {
+      "id": "business-cabin-roller",
+      "type": "luggage",
+      "name": "Cabin roller",
+      "transport": "carry_on",
+      "children": [
+        {
+          "id": "business-clothes-side",
+          "type": "compartment",
+          "name": "Clothing side",
+          "children": [
+            {
+              "id": "business-clothing-cube",
+              "type": "bag",
+              "name": "Business clothing cube",
+              "children": [
+                {"id": "business-shirts", "type": "item", "name": "Business shirts", "quantity": "4", "category": "clothes", "packed": false, "transport_rule": "none", "access": "daily", "stage_ids": ["business-week"], "recommendation": "bring", "reason": "Four meeting days"},
+                {"id": "business-trousers", "type": "item", "name": "Business trousers", "quantity": "2", "category": "clothes", "packed": false, "transport_rule": "none", "access": "daily", "stage_ids": ["business-week"], "recommendation": "bring", "reason": "Mix-and-match rotation"},
+                {"id": "business-underwear", "type": "item", "name": "Underwear and socks", "quantity": "6 sets", "category": "clothes", "packed": false, "transport_rule": "none", "access": "daily", "stage_ids": ["business-week"], "recommendation": "bring", "reason": "No laundry planned plus one spare"},
+                {"id": "thermal-layer-business", "type": "item", "name": "Thermal base layer", "quantity": "2", "category": "clothes", "packed": false, "transport_rule": "none", "access": "daily", "stage_ids": ["business-week"], "recommendation": "bring", "reason": "Cold climate"}
+              ]
+            },
+            {"id": "presentation-outfit", "type": "item", "name": "Presentation outfit", "quantity": "1 complete set", "category": "clothes", "packed": false, "transport_rule": "carry_on", "access": "first_night", "recommendation": "bring", "reason": "Protect the key outfit from checked-bag delay"}
+          ]
+        },
+        {
+          "id": "business-first-night-side",
+          "type": "compartment",
+          "name": "First-night side",
+          "children": [
+            {"id": "business-toiletries", "type": "item", "name": "Airport-compliant toiletries", "quantity": "1 set", "category": "toiletries", "packed": false, "transport_rule": "carry_on", "access": "first_night", "risk": "liquid_leak", "recommendation": "bring", "reason": "Cabin access"},
+            {"id": "business-rain-shell", "type": "item", "name": "Packable waterproof shell", "quantity": "1", "category": "clothes", "packed": false, "transport_rule": "none", "access": "daily", "recommendation": "bring", "reason": "Cold rain and wind"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "business-laptop-bag",
+      "type": "luggage",
+      "name": "Personal laptop bag",
+      "transport": "carry_on",
+      "children": [
+        {
+          "id": "laptop-bag-main",
+          "type": "compartment",
+          "name": "Main compartment",
+          "children": [
+            {"id": "business-passport", "type": "item", "name": "Passport and travel documents", "quantity": "1 set", "category": "documents", "packed": false, "transport_rule": "carry_on", "access": "airport", "risk": "valuable", "recommendation": "bring", "reason": "Travel requirement"},
+            {"id": "work-laptop", "type": "item", "name": "Work laptop", "quantity": "1", "category": "electronics", "packed": false, "transport_rule": "carry_on", "access": "airport", "risk": "valuable", "recommendation": "bring", "reason": "Required for meetings"},
+            {"id": "presentation-backup", "type": "item", "name": "Offline presentation backup", "quantity": "Cloud plus USB", "category": "electronics", "packed": false, "transport_rule": "carry_on", "access": "airport", "recommendation": "bring", "reason": "Presentation resilience"},
+            {"id": "business-power-bank", "type": "item", "name": "Power bank", "quantity": "1", "category": "electronics", "packed": false, "transport_rule": "carry_on", "access": "airport", "risk": "battery", "recommendation": "bring", "reason": "Must remain in cabin baggage"},
+            {"id": "business-chargers", "type": "item", "name": "Laptop and phone chargers", "quantity": "1 set", "category": "electronics", "packed": false, "transport_rule": "carry_on", "access": "first_night", "recommendation": "bring", "reason": "Work-critical"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "small-checked-case",
+      "type": "luggage",
+      "name": "Small checked case",
+      "transport": "checked",
+      "children": [
+        {
+          "id": "checked-formal-side",
+          "type": "compartment",
+          "name": "Formal and bulky items",
+          "children": [
+            {"id": "spare-blazer", "type": "item", "name": "Spare blazer", "quantity": "1", "category": "clothes", "packed": false, "transport_rule": "none", "access": "later", "recommendation": "optional", "reason": "Backup for multiple formal events"},
+            {"id": "dress-shoes", "type": "item", "name": "Dress shoes in shoe bag", "quantity": "1 pair", "category": "clothes", "packed": false, "transport_rule": "none", "access": "later", "recommendation": "bring", "reason": "Client meetings"},
+            {"id": "garment-steamer", "type": "item", "name": "Voltage-compatible garment steamer", "quantity": "1", "category": "other", "packed": false, "transport_rule": "checked", "access": "later", "recommendation": "optional", "reason": "Bring only if accommodation does not provide an iron"}
+          ]
+        }
+      ]
+    }
+  ],
+  "departure_checks": [
+    {"id": "presentation-check", "name": "Presentation opens offline on the work laptop", "checked": false},
+    {"id": "client-documents", "name": "Meeting addresses and client contacts are saved offline", "checked": false},
+    {"id": "business-allowance", "name": "Cabin and checked baggage allowances are confirmed", "checked": false}
+  ],
+  "warnings": [
+    {"item": "Work data", "issue": "Follow employer security policy for devices, USB storage, and confidential files.", "severity": "high"},
+    {"item": "Garment steamer", "issue": "Check destination voltage, plug compatibility, and accommodation rules.", "severity": "medium"}
+  ]
+}
