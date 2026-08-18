@@ -174,9 +174,9 @@ function renderInventory(state: AppState): string {
           : categories}
       </div>
       <div class="inventory-actions">
-        <strong>新增</strong>
+        <button class="inventory-add-primary" type="button" data-workspace-mode="add-item">＋ 添加自己的物品</button>
+        <strong>调整收纳结构</strong>
         <div>
-          <button type="button" data-workspace-mode="add-item">物品</button>
           <button type="button" data-workspace-mode="add-bag">收纳袋</button>
           <button type="button" data-workspace-mode="add-compartment">分区</button>
           <button type="button" data-workspace-mode="add-luggage">箱包</button>
@@ -289,14 +289,14 @@ export function renderWorkspace(state: AppState): string {
     <main class="packing-workspace">
       <section class="workspace-titlebar">
         <div><span class="eyebrow">ACTIVE PACKING MAP / ${document.schemaVersion}</span><h1>${escapeHtml(document.trip.name)}</h1><p>${escapeHtml(document.trip.origin)} → ${document.trip.destinations.map(escapeHtml).join("、")}</p></div>
-        <div><button class="quiet-button" type="button" data-action="review-candidates">重新筛选</button><button class="quiet-button" type="button" data-action="edit-trip">编辑旅行</button></div>
+        <div><button class="primary-button workspace-add-button" type="button" data-workspace-mode="add-item">＋ 添加物品</button><button class="quiet-button" type="button" data-action="review-candidates">重新筛选</button><button class="quiet-button" type="button" data-action="edit-trip">编辑旅行</button></div>
       </section>
       ${renderWorkspaceTabs(state)}
       ${state.workspaceView === "map" ? `
         <section class="packing-workspace-grid">
           ${renderInventory(state)}
           <section class="packing-canvas" aria-label="箱包收纳地图">
-            <header><div><span>PACKING BOARD</span><strong>${document.containers.length} 个箱包</strong></div><small>拖放已开启</small></header>
+            <header><div><span>PACKING BOARD</span><strong>${document.containers.length} 个箱包</strong></div><div class="canvas-actions"><small>拖放已开启</small><button type="button" data-action="rebalance-map" ${document.containers.length < 2 ? "disabled" : ""}>均匀预打包</button></div></header>
             <div class="packing-canvas__cases">${renderLuggage(state, matchedIds)}</div>
           </section>
           ${renderInspector(state)}
@@ -343,6 +343,11 @@ export function bindWorkspaceEvents(root: HTMLElement, store: AppStore): void {
     store.dispatch({ type: "SET_WORKSPACE_MODE", mode: "inspect" });
   });
   root.querySelector<HTMLElement>('[data-action="undo-map"]')?.addEventListener("click", () => store.dispatch({ type: "UNDO_MAP_CHANGE" }));
+  root.querySelector<HTMLElement>('[data-action="rebalance-map"]')?.addEventListener("click", () => {
+    if (window.confirm("重新分配会移动尚未放进收纳袋的物品；收纳袋和袋内物品保持原位。是否继续？")) {
+      store.dispatch({ type: "REBALANCE_MAP" });
+    }
+  });
   root.querySelectorAll<HTMLElement>("[data-set-all-packed]").forEach((button) => button.addEventListener("click", () =>
     store.dispatch({ type: "SET_ALL_PACKED", packed: button.dataset.setAllPacked === "true" })));
 

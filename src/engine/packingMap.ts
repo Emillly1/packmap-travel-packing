@@ -102,7 +102,7 @@ function allDestinations(containers: LuggageNode[]): Array<{ luggage: LuggageNod
   return containers.flatMap((luggage) => luggage.children.map((compartment) => ({ luggage, compartment })));
 }
 
-function compartmentFor(luggage: LuggageNode, item: CandidateItem): CompartmentNode | null {
+function compartmentFor(luggage: LuggageNode, item: PlacementItem): CompartmentNode | null {
   if (!luggage.children.length) return null;
   const useSecondary = luggage.transport === "checked"
     ? item.category === "care" || item.category === "household"
@@ -110,17 +110,32 @@ function compartmentFor(luggage: LuggageNode, item: CandidateItem): CompartmentN
   return luggage.children[useSecondary ? Math.min(1, luggage.children.length - 1) : 0];
 }
 
-function targetForItem(containers: LuggageNode[], item: CandidateItem): CompartmentNode | null {
+type PlacementItem = Pick<ItemNode, "category" | "transportRule" | "access">;
+
+function nestedItemCount(nodes: Array<BagNode | ItemNode>): number {
+  return nodes.reduce((count, node) => count + (node.type === "item" ? 1 : nestedItemCount(node.children)), 0);
+}
+
+function luggageItemCount(luggage: LuggageNode): number {
+  return luggage.children.reduce((count, compartment) => count + nestedItemCount(compartment.children), 0);
+}
+
+function compatibleLuggage(containers: LuggageNode[], item: PlacementItem): LuggageNode[] {
+  const carryOn = containers.filter((luggage) => luggage.transport === "carry-on");
+  const checked = containers.filter((luggage) => luggage.transport === "checked");
+  if (item.transportRule === "carry-on") return carryOn.length ? carryOn : checked.length ? checked : containers;
+  if (item.transportRule === "checked") return checked.length ? checked : carryOn.length ? carryOn : containers;
+  if (item.access === "airport" || item.access === "first-night") return carryOn.length ? carryOn : checked.length ? checked : containers;
+  return checked.length ? checked : carryOn.length ? carryOn : containers;
+}
+
+function targetForItem(containers: LuggageNode[], item: PlacementItem): CompartmentNode | null {
   const destinations = allDestinations(containers);
   if (!destinations.length) return null;
-  const carryOnLuggage = containers.find((luggage) => luggage.transport === "carry-on");
-  const checkedLuggage = containers.find((luggage) => luggage.transport === "checked");
-  const carryOn = carryOnLuggage ? compartmentFor(carryOnLuggage, item) : null;
-  const checked = checkedLuggage ? compartmentFor(checkedLuggage, item) : null;
-  if (item.transportRule === "carry-on") return carryOn ?? checked ?? destinations[0].compartment;
-  if (item.transportRule === "checked") return checked ?? destinations[0].compartment;
-  if (item.access === "airport" || item.access === "first-night") return carryOn ?? checked ?? destinations[0].compartment;
-  return checked ?? carryOn ?? destinations[0].compartment;
+  const compatible = compatibleLuggage(containers, item).filter((luggage) => luggage.children.length);
+  const targetLuggage = compatible.reduce<LuggageNode | null>((best, luggage) =>
+    !best || luggageItemCount(luggage) < luggageItemCount(best) ? luggage : best, null);
+  return targetLuggage ? compartmentFor(targetLuggage, item) : destinations[0].compartment;
 }
 
 function placeCandidate(containers: LuggageNode[], candidate: CandidateItem): void {
@@ -133,7 +148,7 @@ function updateCandidateNodes(nodes: Array<BagNode | ItemNode>, candidates: Map<
   return nodes.flatMap<BagNode | ItemNode>((node): Array<BagNode | ItemNode> => {
     if (node.type === "bag") return [{ ...node, children: updateCandidateNodes(node.children, candidates) }];
     const candidate = candidates.get(node.id);
-    if (!candidate && catalogIds.has(node.id)) return [];
+    if (!candidate && (catalogIds.has(node.id) || node.id.startsWith("custom-candidate-"))) return [];
     if (!candidate) return [node];
     return [{
       ...node,
@@ -167,6 +182,25 @@ export function syncPackingMap(document: PackMapDocument, draft: TripDraft, resu
 
   const existingIds = new Set(flattenMap(containers).filter((entry) => entry.node.type === "item").map((entry) => entry.node.id));
   selected.filter((candidate) => !existingIds.has(candidate.id)).forEach((candidate) => placeCandidate(containers, candidate));
+  return touch({ ...document, containers });
+}
+
+export function rebalanceLooseItems(document: PackMapDocument): PackMapDocument {
+  if (document.containers.length < 2) return document;
+  const looseItems = document.containers.flatMap((luggage) => luggage.children.flatMap((compartment) =>
+    compartment.children.filter((node): node is ItemNode => node.type === "item")));
+  if (!looseItems.length) return document;
+  const containers = document.containers.map((luggage) => ({
+    ...luggage,
+    children: luggage.children.map((compartment) => ({
+      ...compartment,
+      children: compartment.children.filter((node) => node.type === "bag"),
+    })),
+  }));
+  looseItems.forEach((item) => {
+    const target = targetForItem(containers, item);
+    if (target) target.children.push(item);
+  });
   return touch({ ...document, containers });
 }
 

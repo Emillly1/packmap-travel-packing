@@ -8,6 +8,7 @@ import {
   flattenMap,
   moveMapNode,
   packingStats,
+  rebalanceLooseItems,
   searchPackingMap,
   syncPackingMap,
   togglePackedItem,
@@ -82,5 +83,25 @@ describe("packing map engine", () => {
 
     expect(findMapEntry(document, "identity-documents")?.parentId).toBe(targetId);
     expect(findMapEntry(document, "booking-documents")).toBeUndefined();
+  });
+
+  it("balances prepacking across luggage with the same transport role", () => {
+    const draft = {
+      ...PLANNER_SCENARIOS.weeklyCity,
+      bagSetup: "托运行李 A：主区、袋区\n托运行李 B：主区、袋区\n随身背包：主仓",
+    };
+    let document = syncPackingMap(createPackMapDocument(draft), draft, generatePackingSuggestions(draft));
+    const checkedCounts = document.containers.slice(0, 2).map((luggage) =>
+      flattenMap([luggage]).filter((entry) => entry.node.type === "item").length);
+    expect(checkedCounts.every((count) => count > 0)).toBe(true);
+    expect(Math.abs(checkedCounts[0] - checkedCounts[1])).toBeLessThanOrEqual(1);
+    expect(findMapEntry(document, "identity-documents")?.path[0]).toBe("随身背包");
+
+    const firstCheckedTarget = document.containers[0].children[0].id;
+    const secondCheckedItem = flattenMap([document.containers[1]]).find((entry) => entry.node.type === "item");
+    if (!secondCheckedItem) throw new Error("balanced fixture is missing a second-bag item");
+    document = moveMapNode(document, secondCheckedItem.node.id, firstCheckedTarget);
+    document = rebalanceLooseItems(document);
+    expect(flattenMap([document.containers[1]]).some((entry) => entry.node.type === "item")).toBe(true);
   });
 });

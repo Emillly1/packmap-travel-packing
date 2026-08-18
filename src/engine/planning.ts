@@ -5,10 +5,12 @@ import {
   type CandidateGroup,
   type CandidateItem,
   type CatalogItem,
+  type PackingCategory,
   type PlannerTrigger,
   type PlanningResult,
   type QuantityRule,
 } from "../models/planning";
+import type { TransportRule } from "../models/packing";
 import type { TripDraft } from "../models/trip";
 import { parseDestinations, tripDurationDays } from "./trip";
 
@@ -156,14 +158,57 @@ export function generatePackingSuggestions(draft: TripDraft): PlanningResult {
 
 export function reconcilePlanningSelections(next: PlanningResult, previous: PlanningResult | null): PlanningResult {
   if (!previous) return next;
-  const selectedById = new Map(flattenCandidateItems(previous).map((item) => [item.id, item.selected]));
+  const previousItems = flattenCandidateItems(previous);
+  const selectedById = new Map(previousItems.map((item) => [item.id, item.selected]));
+  const customItems = previousItems.filter((item) => item.custom);
   return {
     ...next,
-    groups: next.groups.map((group) => ({
-      ...group,
-      items: group.items.map((item) => ({ ...item, selected: selectedById.get(item.id) ?? item.selected })),
-    })),
+    groups: CATEGORY_ORDER.flatMap((category) => {
+      const generated = next.groups.find((group) => group.id === category)?.items ?? [];
+      const custom = customItems.filter((item) => item.category === category);
+      const items = [...generated, ...custom].map((item) => ({
+        ...item,
+        selected: selectedById.get(item.id) ?? item.selected,
+      }));
+      return items.length ? [{ id: category, name: CATEGORY_LABELS[category], items }] : [];
+    }),
   };
+}
+
+export interface CustomCandidateInput {
+  name: string;
+  quantity: string;
+  category: PackingCategory;
+  transportRule: TransportRule;
+}
+
+export function addCustomCandidate(result: PlanningResult, input: CustomCandidateInput): PlanningResult {
+  const name = input.name.trim();
+  if (!name) return result;
+  const existingIds = new Set(flattenCandidateItems(result).map((item) => item.id));
+  let index = existingIds.size + 1;
+  let id = `custom-candidate-${index}`;
+  while (existingIds.has(id)) id = `custom-candidate-${++index}`;
+  const item: CandidateItem = {
+    id,
+    name,
+    category: input.category,
+    scope: "shared",
+    quantity: input.quantity.trim() || "1 件",
+    transportRule: input.transportRule,
+    access: input.transportRule === "carry-on" ? "daily" : input.transportRule === "checked" ? "later" : "any",
+    recommendation: "bring",
+    reason: "你添加的自定义物品。",
+    selected: true,
+    sourceTriggers: [],
+    custom: true,
+  };
+  const hasGroup = result.groups.some((group) => group.id === input.category);
+  const groups = hasGroup
+    ? result.groups.map((group) => group.id === input.category ? { ...group, items: [...group.items, item] } : group)
+    : [...result.groups, { id: input.category, name: CATEGORY_LABELS[input.category], items: [item] }]
+        .sort((left, right) => CATEGORY_ORDER.indexOf(left.id) - CATEGORY_ORDER.indexOf(right.id));
+  return { ...result, groups };
 }
 
 export function flattenCandidateItems(result: PlanningResult): CandidateItem[] {

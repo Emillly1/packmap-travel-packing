@@ -60,6 +60,7 @@ export interface CandidateItem extends Omit<CatalogItem, "triggers" | "quantityR
   quantity: string;
   selected: boolean;
   sourceTriggers: PlannerTrigger[];
+  custom?: boolean;
 }
 
 export interface CandidateGroup {

@@ -1,7 +1,7 @@
 import { TRIP_TEMPLATES } from "../data/templates";
 import { countSelectedCandidates, flattenCandidateItems } from "../engine/planning";
 import { validateWizardStep } from "../engine/trip";
-import type { CandidateItem, PackingCategory } from "../models/planning";
+import { CATEGORY_LABELS, type CandidateItem, type PackingCategory } from "../models/planning";
 import type { Recommendation, TransportRule } from "../models/packing";
 import type { LaundryFrequency, TemplateId, TransportMode, TripDraft, TripType } from "../models/trip";
 import type { AppState, AppStore } from "../state/store";
@@ -249,6 +249,7 @@ function renderCandidateItem(item: CandidateItem): string {
         <span class="candidate-title"><strong>${escapeHtml(item.name)}</strong><b>${escapeHtml(item.quantity)}</b></span>
         <small>${escapeHtml(item.reason)}</small>
         <span class="candidate-badges">
+          ${item.custom ? '<i class="badge badge--custom">自定义</i>' : ""}
           <i class="badge badge--${item.recommendation}">${RECOMMENDATION_LABELS[item.recommendation]}</i>
           <i class="badge">${TRANSPORT_RULE_LABELS[item.transportRule]}</i>
           <i class="badge">${item.scope === "shared" ? "共享" : "每人"}</i>
@@ -287,6 +288,16 @@ function renderReview(state: AppState): string {
         </nav>
 
         <section class="review-list" aria-label="候选行李清单">
+          <section class="custom-candidate-panel" id="custom-candidate">
+            <header><div><span>ADD YOUR OWN</span><h2>添加自己的物品</h2></div><p>添加后会和推荐物品一起预打包。</p></header>
+            <form class="custom-candidate-form" data-add-custom-candidate>
+              <label class="custom-candidate-name">物品名称<input name="name" required autocomplete="off" placeholder="例如：卷发棒"></label>
+              <label>数量<input name="quantity" value="1 件"></label>
+              <label>分类<select name="category">${Object.entries(CATEGORY_LABELS).map(([id, name]) => `<option value="${id}">${escapeHtml(name)}</option>`).join("")}</select></label>
+              <label>位置要求<select name="transportRule"><option value="none">不限位置</option><option value="carry-on">必须随身</option><option value="checked">建议托运</option></select></label>
+              <button class="primary-button" type="submit">＋ 添加到清单</button>
+            </form>
+          </section>
           ${result.groups.map((group) => {
             const selected = group.items.filter((item) => item.selected).length;
             const allSelected = selected === group.items.length;
@@ -396,6 +407,19 @@ function bindEvents(root: HTMLElement, store: AppStore): void {
   root.querySelector<HTMLElement>('[data-action="edit-trip"]')?.addEventListener("click", () => store.dispatch({ type: "EDIT_TRIP" }));
   root.querySelector<HTMLElement>('[data-action="review-candidates"]')?.addEventListener("click", () => store.dispatch({ type: "REVIEW_CANDIDATES" }));
   root.querySelector<HTMLElement>('[data-action="confirm-candidates"]')?.addEventListener("click", () => store.dispatch({ type: "CONFIRM_CANDIDATES" }));
+  root.querySelector<HTMLFormElement>("[data-add-custom-candidate]")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const values = new FormData(event.currentTarget as HTMLFormElement);
+    store.dispatch({
+      type: "ADD_CUSTOM_CANDIDATE",
+      input: {
+        name: String(values.get("name") ?? ""),
+        quantity: String(values.get("quantity") ?? ""),
+        category: String(values.get("category") ?? "household") as PackingCategory,
+        transportRule: String(values.get("transportRule") ?? "none") as TransportRule,
+      },
+    });
+  });
   root.querySelectorAll<HTMLInputElement>("[data-candidate-id]").forEach((input) => {
     input.addEventListener("change", () => store.dispatch({ type: "TOGGLE_CANDIDATE", itemId: input.dataset.candidateId ?? "" }));
   });

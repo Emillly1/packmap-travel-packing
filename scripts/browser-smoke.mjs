@@ -85,7 +85,7 @@ await evaluate(`
 `);
 await waitFor('document.querySelector("#bagSetup")', "Luggage step did not open");
 await evaluate(`
-  document.querySelector("#bagSetup").value = "托运行李：开放面、袋子面\\n随身背包：主仓、前袋";
+  document.querySelector("#bagSetup").value = "托运行李 A：开放面、袋子面\\n托运行李 B：开放面、袋子面\\n随身背包：主仓、前袋";
   document.querySelector("[data-action=next]").click();
 `);
 await waitFor('document.querySelector(".review-screen")', "Packing review did not open");
@@ -96,6 +96,19 @@ const hikingPresent = await evaluate('Boolean(document.querySelector("[data-cand
 if (reviewTitle !== "确认你的候选清单" || candidateCount < 20 || hikingPresent) {
   throw new Error(`Unexpected review result: ${reviewTitle}, ${candidateCount}, hiking=${hikingPresent}`);
 }
+await evaluate(`
+  (() => {
+    const form = document.querySelector("[data-add-custom-candidate]");
+    form.querySelector("[name=name]").value = "便携热水袋";
+    form.querySelector("[name=quantity]").value = "1 个";
+    form.querySelector("[name=category]").value = "household";
+    form.querySelector("[name=transportRule]").value = "checked";
+    form.requestSubmit();
+  })()
+`);
+await waitFor('[...document.querySelectorAll(".candidate-title strong")].some((node) => node.textContent === "便携热水袋")', "Custom review item was not added");
+const candidateCountAfterCustom = await evaluate('document.querySelectorAll("[data-candidate-id]").length');
+if (candidateCountAfterCustom !== candidateCount + 1) throw new Error("Custom candidate count did not update");
 const desktopOverflow = await evaluate("document.documentElement.scrollWidth > window.innerWidth");
 if (desktopOverflow) throw new Error("Desktop review has horizontal overflow");
 
@@ -111,7 +124,18 @@ await evaluate('document.querySelector("[data-action=confirm-candidates]").click
 await waitFor('document.querySelector(".packing-workspace")', "Workspace did not open after confirmation");
 const mappedItems = await evaluate('document.querySelectorAll(".map-item").length');
 const luggageCount = await evaluate('document.querySelectorAll(".packing-case").length');
-if (mappedItems < 20 || luggageCount !== 2) throw new Error("Packing map was not materialized correctly");
+if (mappedItems < 20 || luggageCount !== 3) throw new Error("Packing map was not materialized correctly");
+const checkedBagCounts = await evaluate(`
+  [...document.querySelectorAll(".packing-case")].slice(0, 2).map((bag) => bag.querySelectorAll(".map-item").length)
+`);
+if (checkedBagCounts.some((count) => count === 0) || Math.abs(checkedBagCounts[0] - checkedBagCounts[1]) > 1) {
+  throw new Error(`Checked luggage was not balanced: ${checkedBagCounts.join(", ")}`);
+}
+if (!await evaluate('[...document.querySelectorAll(".map-item strong")].some((node) => node.textContent === "便携热水袋")')) {
+  throw new Error("Custom review item did not reach the packing map");
+}
+await evaluate('window.confirm = () => true; document.querySelector("[data-action=rebalance-map]").click()');
+await waitFor('!document.querySelector("[data-action=undo-map]").disabled', "Rebalance did not create an undo step");
 
 await evaluate(`
   document.querySelector("[data-workspace-mode=add-bag]").click();
@@ -229,6 +253,11 @@ await waitFor('document.querySelector(".safety-view")', "Mobile safety view did 
 const mobileOverflow = await evaluate("document.documentElement.scrollWidth > window.innerWidth");
 if (mobileOverflow) throw new Error("Mobile safety view has horizontal overflow");
 await screenshot("phase-4-safety-mobile.png");
+await evaluate('document.querySelector("[data-action=review-candidates]").click()');
+await waitFor('document.querySelector(".custom-candidate-form")', "Mobile review did not open");
+const mobileReviewOverflow = await evaluate("document.documentElement.scrollWidth > window.innerWidth");
+if (mobileReviewOverflow) throw new Error("Mobile custom candidate review has horizontal overflow");
+await screenshot("feedback-review-mobile.png");
 
 console.log(JSON.stringify({
   reviewTitle,
@@ -244,7 +273,10 @@ console.log(JSON.stringify({
   departureTotal,
   titleAfterInvalidImport,
   mobileOverflow,
-  screenshots: 5,
+  mobileReviewOverflow,
+  checkedBagCounts,
+  candidateCountAfterCustom,
+  screenshots: 6,
   printPdf: "artifacts/phase-4-print.pdf",
 }, null, 2));
 socket.close();

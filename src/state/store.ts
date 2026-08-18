@@ -4,6 +4,7 @@ import {
   deleteMapNode,
   findMapEntry,
   moveMapNode,
+  rebalanceLooseItems,
   setAllItemsPacked,
   syncPackingMap,
   togglePackedItem,
@@ -11,7 +12,7 @@ import {
   type MapNodePatch,
   type NewMapNode,
 } from "../engine/packingMap";
-import { generatePackingSuggestions, reconcilePlanningSelections } from "../engine/planning";
+import { addCustomCandidate, generatePackingSuggestions, reconcilePlanningSelections, type CustomCandidateInput } from "../engine/planning";
 import { acknowledgeWarning, refreshSafetyData, toggleDepartureCheck } from "../engine/safety";
 import { createPackMapDocument, updatePackMapDocument } from "../engine/trip";
 import type { PackingCategory, PlanningResult } from "../models/planning";
@@ -50,6 +51,7 @@ export type AppAction =
   | { type: "COMPLETE_SETUP" }
   | { type: "TOGGLE_CANDIDATE"; itemId: string }
   | { type: "SET_GROUP_SELECTION"; category: PackingCategory; selected: boolean }
+  | { type: "ADD_CUSTOM_CANDIDATE"; input: CustomCandidateInput }
   | { type: "CONFIRM_CANDIDATES" }
   | { type: "REVIEW_CANDIDATES" }
   | { type: "SET_WORKSPACE_SEARCH"; query: string }
@@ -60,6 +62,7 @@ export type AppAction =
   | { type: "TOGGLE_PACKED_ITEM"; itemId: string }
   | { type: "SET_ALL_PACKED"; packed: boolean }
   | { type: "MOVE_MAP_NODE"; nodeId: string; targetId: string }
+  | { type: "REBALANCE_MAP" }
   | { type: "ADD_MAP_NODE"; input: NewMapNode }
   | { type: "UPDATE_MAP_NODE"; nodeId: string; patch: MapNodePatch }
   | { type: "DELETE_MAP_NODE"; nodeId: string }
@@ -190,6 +193,16 @@ export function reduceAppState(state: AppState, action: AppAction): AppState {
         planningResult: updatePlanningItems(state.planningResult, (category) => category === action.category, action.selected),
         planningConfirmed: false,
       };
+    case "ADD_CUSTOM_CANDIDATE":
+      return state.planningResult
+        ? {
+            ...state,
+            planningResult: addCustomCandidate(state.planningResult, action.input),
+            planningConfirmed: false,
+            notice: "自定义物品已加入候选清单。",
+            error: null,
+          }
+        : state;
     case "CONFIRM_CANDIDATES":
       return {
         ...state,
@@ -228,6 +241,8 @@ export function reduceAppState(state: AppState, action: AppAction): AppState {
       return applyDocumentMutation(state, (document) => setAllItemsPacked(document, action.packed), action.packed ? "全部物品已标记装入。" : "全部物品已标记未装。");
     case "MOVE_MAP_NODE":
       return applyDocumentMutation(state, (document) => moveMapNode(document, action.nodeId, action.targetId), "物品位置已更新。");
+    case "REBALANCE_MAP":
+      return applyDocumentMutation(state, rebalanceLooseItems, "未归袋物品已按箱包角色均匀分配，可撤销。");
     case "ADD_MAP_NODE": {
       const next = applyDocumentMutation(state, (document) => addMapNode(document, action.input), "新内容已加入地图。");
       return { ...next, workspaceMode: "inspect" };

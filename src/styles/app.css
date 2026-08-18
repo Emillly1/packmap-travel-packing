@@ -112,6 +112,16 @@
 .badge--bring { border-color: #9ac7b2; color: #286149; }
 .badge--buy-local { border-color: #d7b365; background: var(--amber-soft); color: #6c5218; }
 .badge--optional { border-color: #9dbdd1; background: var(--blue-soft); color: #34596f; }
+.badge--custom { border-color: var(--ink); background: var(--ink); color: white; }
+.custom-candidate-panel { scroll-margin-top: 88px; border: 1px solid var(--ink); border-radius: 7px; background: var(--paper); box-shadow: var(--shadow-soft); }
+.custom-candidate-panel > header { min-height: 66px; padding: 12px 15px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px dashed var(--line-strong); }
+.custom-candidate-panel > header span { color: var(--coral); font: 750 8px/1 ui-monospace, monospace; }
+.custom-candidate-panel > header h2 { margin: 5px 0 0; font-size: 17px; }
+.custom-candidate-panel > header p { margin: 0; color: var(--muted); font-size: 10px; }
+.custom-candidate-form { padding: 12px 15px 15px; display: grid; grid-template-columns: minmax(150px, 1.5fr) minmax(82px, 0.7fr) minmax(120px, 1fr) minmax(120px, 1fr) auto; align-items: end; gap: 8px; }
+.custom-candidate-form label { min-width: 0; display: grid; gap: 5px; color: var(--muted); font-size: 9px; font-weight: 750; }
+.custom-candidate-form input, .custom-candidate-form select { width: 100%; min-width: 0; min-height: 37px; padding: 0 9px; border: 1px solid var(--line-strong); border-radius: 5px; background: white; color: var(--ink); font-size: 11px; }
+.custom-candidate-form .primary-button { min-height: 37px; padding: 0 12px; white-space: nowrap; }
 .review-progress { margin: 18px auto; width: 126px; aspect-ratio: 1; display: grid; place-items: center; align-content: center; gap: 3px; border-radius: 50%; background: radial-gradient(circle, var(--paper) 58%, transparent 60%), conic-gradient(var(--green) var(--progress), #e5e6e2 0); }
 .review-progress strong { font-size: 27px; }
 .review-progress span { max-width: 82px; color: var(--muted); font-size: 9px; text-align: center; }
@@ -215,6 +225,9 @@ dd { margin: 0; max-width: 120px; text-align: right; font-size: 11px; font-weigh
   .review-categories a { flex: none; border-right: 1px solid #ecece8; border-bottom: 0; }
   .candidate-items { grid-template-columns: 1fr; }
   .candidate-item { min-height: 124px; }
+  .custom-candidate-panel > header { align-items: flex-start; flex-direction: column; gap: 6px; }
+  .custom-candidate-form { grid-template-columns: 1fr 1fr; }
+  .custom-candidate-name, .custom-candidate-form .primary-button { grid-column: 1 / -1; }
   .review-summary { grid-column: auto; grid-template-columns: 1fr; }
   .review-summary > header { height: auto; border-right: 0; border-bottom: 1px dashed var(--line-strong); place-items: initial; }
   .review-summary dl { display: block; }
@@ -231,7 +244,8 @@ dd { margin: 0; max-width: 120px; text-align: right; font-size: 11px; font-weigh
 .workspace-titlebar { min-height: 94px; padding: 14px 0 18px; display: flex; align-items: end; justify-content: space-between; gap: 20px; border-bottom: 1px solid var(--line-strong); }
 .workspace-titlebar h1 { margin: 5px 0 3px; font-size: 26px; }
 .workspace-titlebar p { margin: 0; color: var(--muted); font-size: 12px; }
-.workspace-titlebar > div:last-child { display: flex; gap: 8px; }
+.workspace-titlebar > div:last-child { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.workspace-add-button { min-height: 36px; padding: 0 13px; }
 .packing-workspace-grid { margin-top: 14px; display: grid; grid-template-columns: 225px minmax(560px, 1fr) 250px; gap: 12px; align-items: start; }
 .inventory-panel, .workspace-inspector { position: sticky; top: 82px; max-height: calc(100vh - 96px); overflow: auto; scrollbar-width: thin; }
 .inventory-panel, .packing-progress, .location-ledger, .map-editor { border: 1px solid var(--line); border-radius: 7px; background: var(--paper); box-shadow: var(--shadow-soft); }
@@ -257,9 +271,10 @@ dd { margin: 0; max-width: 120px; text-align: right; font-size: 11px; font-weigh
 .search-result small { margin-top: 3px; overflow: hidden; color: var(--muted); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
 .inventory-empty { padding: 24px 12px; color: var(--muted); font-size: 11px; text-align: center; }
 .inventory-actions { padding: 12px; border-top: 1px dashed var(--line-strong); }
-.inventory-actions > strong { display: block; margin-bottom: 8px; font-size: 10px; }
-.inventory-actions > div { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; }
+.inventory-actions > strong { display: block; margin: 12px 0 8px; color: var(--muted); font-size: 9px; }
+.inventory-actions > div { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
 .inventory-actions button, .undo-button, .packing-progress__actions button { min-height: 32px; border: 1px solid var(--line); border-radius: 5px; background: #fafaf7; font-size: 10px; }
+.inventory-actions .inventory-add-primary { width: 100%; min-height: 38px; border-color: var(--ink); background: var(--ink); color: white; font-weight: 750; }
 .undo-button { width: calc(100% - 24px); margin: 0 12px 12px; }
 .undo-button span { font-size: 16px; vertical-align: -1px; }
 .packing-canvas { min-width: 0; }
@@ -268,6 +283,9 @@ dd { margin: 0; max-width: 120px; text-align: right; font-size: 11px; font-weigh
 .packing-canvas > header span { color: var(--coral); font: 750 9px/1 ui-monospace, monospace; }
 .packing-canvas > header strong { font-size: 13px; }
 .packing-canvas > header small { color: var(--muted); font-size: 9px; }
+.packing-canvas > header .canvas-actions { display: flex; align-items: center; gap: 8px; }
+.canvas-actions button { min-height: 31px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 5px; background: var(--paper); color: var(--ink); font-size: 9px; font-weight: 750; }
+.canvas-actions button:disabled { opacity: 0.45; }
 .packing-canvas__cases { display: grid; gap: 22px; }
 .packing-case { position: relative; border: 2px solid var(--green); border-radius: 8px; background: color-mix(in srgb, var(--green-soft) 42%, var(--paper)); box-shadow: 0 7px 18px rgba(29, 38, 33, 0.08); transition: border-color 150ms ease, transform 150ms ease; }
 .packing-case--1 { border-color: var(--coral); background: color-mix(in srgb, var(--coral-soft) 38%, var(--paper)); }

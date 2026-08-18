@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { ITEM_CATALOG } from "../src/data/itemCatalog";
-import { flattenCandidateItems, generatePackingSuggestions, reconcilePlanningSelections } from "../src/engine/planning";
+import { addCustomCandidate, flattenCandidateItems, generatePackingSuggestions, reconcilePlanningSelections } from "../src/engine/planning";
 import { PLANNER_SCENARIOS } from "./fixtures/plannerScenarios";
 
 function byId(result: ReturnType<typeof generatePackingSuggestions>, id: string) {
@@ -64,5 +64,20 @@ describe("planning engine", () => {
     formal.selected = false;
     const reconciled = reconcilePlanningSelections(second, first);
     expect(byId(reconciled, "formal-outfit")?.selected).toBe(false);
+  });
+
+  it("adds custom candidates and preserves them when the trip is recalculated", () => {
+    const generated = generatePackingSuggestions(PLANNER_SCENARIOS.weeklyCity);
+    const customized = addCustomCandidate(generated, {
+      name: "卷发棒",
+      quantity: "1 个",
+      category: "care",
+      transportRule: "checked",
+    });
+    const custom = flattenCandidateItems(customized).find((item) => item.name === "卷发棒");
+    expect(custom).toMatchObject({ custom: true, selected: true, transportRule: "checked" });
+
+    const recalculated = reconcilePlanningSelections(generatePackingSuggestions(PLANNER_SCENARIOS.weeklyCity), customized);
+    expect(flattenCandidateItems(recalculated).find((item) => item.id === custom?.id)?.quantity).toBe("1 个");
   });
 });
