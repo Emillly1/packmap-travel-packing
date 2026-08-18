@@ -290,7 +290,7 @@ export function renderWorkspace(state: AppState): string {
   const matchedIds = new Set(searchPackingMap(document, state.workspaceSearch).map((entry) => entry.node.id));
   const looseItems = flattenMap(document.containers).filter((entry) => entry.node.type === "item" && entry.parentId && findMapEntry(document, entry.parentId)?.node.type === "compartment").length;
   return `
-    <main class="packing-workspace">
+    <main id="main-content" class="packing-workspace" tabindex="-1">
       <section class="workspace-titlebar">
         <div><span class="eyebrow">ACTIVE PACKING MAP / ${document.schemaVersion}</span><h1>${escapeHtml(document.trip.name)}</h1><p>${escapeHtml(document.trip.origin)} → ${document.trip.destinations.map(escapeHtml).join("、")}</p></div>
         <div><button class="primary-button workspace-add-button" type="button" data-workspace-mode="add-item">＋ 添加物品</button><button class="quiet-button" type="button" data-action="review-candidates">重新筛选</button><button class="quiet-button" type="button" data-action="edit-trip">编辑旅行</button></div>

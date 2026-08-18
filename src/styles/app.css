@@ -178,6 +178,26 @@ dd { margin: 0; max-width: 120px; text-align: right; font-size: 11px; font-weigh
 .confirmed-groups span { padding: 5px 7px; border: 1px solid var(--line); border-radius: 4px; background: #fafaf7; font-size: 10px; }
 .confirmed-groups span b { color: var(--muted); font-size: 9px; }
 .status-region { position: fixed; left: -9999px; }
+.app-release-footer { width: min(var(--content), calc(100% - 32px)); min-height: 62px; margin: 24px auto 0; padding: 14px 0 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-top: 1px solid var(--line-strong); color: var(--muted); font-size: 9px; }
+.app-release-footer > div { display: flex; gap: 14px; }
+.app-release-footer button { padding: 0; border: 0; border-bottom: 1px solid transparent; background: transparent; color: var(--ink); font-size: 9px; }
+.app-release-footer button:hover { border-bottom-color: currentColor; }
+.release-dialog { width: min(620px, calc(100% - 24px)); max-width: none; padding: 0; border: 0; border-radius: 7px; background: transparent; box-shadow: 0 24px 70px rgba(25, 31, 28, 0.26); }
+.release-dialog::backdrop { background: rgba(27, 34, 30, 0.42); backdrop-filter: blur(2px); }
+.release-dialog__shell { margin: 0; padding: 0; border: 1px solid var(--line-strong); border-radius: 7px; background: var(--paper); }
+.release-dialog__shell > header { min-height: 82px; padding: 14px 16px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; border-bottom: 1px dashed var(--line-strong); }
+.release-dialog__shell > header span { color: var(--coral); font: 750 8px/1 ui-monospace, monospace; }
+.release-dialog__shell > header h2 { margin: 7px 0 0; font-size: 20px; }
+.release-dialog__shell > header button { width: 28px; aspect-ratio: 1; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: transparent; }
+.release-dialog__body { padding: 16px; display: grid; gap: 14px; }
+.release-dialog__body section { padding-bottom: 13px; border-bottom: 1px solid var(--line); }
+.release-dialog__body section:last-child { padding-bottom: 0; border-bottom: 0; }
+.release-dialog__body h3 { margin: 0 0 5px; font-size: 12px; }
+.release-dialog__body p { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.65; }
+.release-dialog__body label { display: grid; gap: 6px; color: var(--muted); font-size: 9px; font-weight: 750; }
+.release-dialog__body textarea { width: 100%; padding: 9px; border: 1px solid var(--line-strong); border-radius: 5px; background: white; color: var(--ink); resize: vertical; }
+.release-dialog__shell > footer { padding: 12px 16px; display: flex; align-items: center; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--line); }
+.release-dialog__shell .release-delete { width: auto; min-height: 40px; margin: 0 auto 0 0; padding: 0 12px; }
 @media (max-width: 1020px) {
   .template-intro { grid-template-columns: 1fr; }
   .intro-copy { padding: 48px 0 28px; }
@@ -377,6 +397,9 @@ dd { margin: 0; max-width: 120px; text-align: right; font-size: 11px; font-weigh
   .workspace-inspector > .map-editor, .workspace-inspector > .location-ledger { margin-top: 0; }
 }
 @media (max-width: 760px) {
+  .app-release-footer { width: min(100% - 18px, var(--content)); align-items: flex-start; flex-direction: column; }
+  .release-dialog__shell > footer { align-items: stretch; flex-direction: column; }
+  .release-dialog__shell .release-delete { width: 100%; margin: 0; }
   .packing-workspace { width: min(100% - 14px, 1540px); padding-top: 8px; }
   .workspace-titlebar { align-items: flex-start; flex-direction: column; }
   .workspace-titlebar > div:last-child { width: 100%; }
@@ -585,7 +608,7 @@ dd { margin: 0; max-width: 120px; text-align: right; font-size: 11px; font-weigh
   @page { margin: 12mm; }
   html, body { min-width: 0; background: white !important; }
   body { color: #111; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-  .app-header, .packing-workspace > :not(.print-sheet), .status-region { display: none !important; }
+  .skip-link, .app-header, .app-release-footer, .release-dialog, .packing-workspace > :not(.print-sheet), .status-region { display: none !important; }
   .packing-workspace { width: 100%; margin: 0; padding: 0; }
   .print-sheet { display: block; font-family: Arial, "PingFang SC", sans-serif; }
   .print-sheet > header { padding-bottom: 10mm; display: flex; align-items: end; justify-content: space-between; border-bottom: 1.5pt solid #111; }
@@ -604,5 +627,5 @@ dd { margin: 0; max-width: 120px; text-align: right; font-size: 11px; font-weigh
   .print-sheet tr { break-inside: avoid; }
   .print-sheet ul { margin: 0; padding-left: 5mm; font-size: 8pt; line-height: 1.5; }
   .print-checks { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2mm 5mm; font-size: 8pt; }
-  .print-sheet footer { margin-top: 8mm; padding-top: 3mm; border-top: 0.5pt solid #aaa; color: #666; font-size: 7pt; }
+  .print-sheet footer { margin-top: 2mm; padding-top: 1mm; break-inside: avoid; border-top: 0.5pt solid #aaa; color: #666; font-size: 7pt; }
 }

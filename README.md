@@ -2,6 +2,8 @@
 
 PackMap turns trip details into an actionable packing map: what to bring, what to buy locally, and where every item belongs.
 
+Current release: `0.2.0-beta.1`.
+
 This repository is the maintainable product rewrite of the original single-file organizer. The current product slice includes trip templates, guided setup, deterministic packing recommendations, candidate review, a dedicated organization-confirmation step, an interactive luggage map, transport safety review, departure checks, and local-first data portability.
 
 The packing workflow automatically proposes nested pouches before the final map. Users can add items or pouches directly inside any luggage level, rename or move pouches, tap an item to choose its destination, remove a pouch without deleting its contents, and keep deliberately loose items loose. The final workspace supports full-path search, packed status, drag-and-drop movement, touch-friendly destination controls, map editing, and ten-step undo.
@@ -33,6 +35,7 @@ Other checks:
 npm run typecheck
 npm test
 npm run build
+npm run check:budget
 ```
 
 With the Vite server and a Chrome remote-debugging session running, the repeatable browser smoke test is:

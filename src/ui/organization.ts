@@ -77,7 +77,7 @@ export function renderOrganization(state: AppState): string {
   const itemEntries = entries.filter((entry) => entry.node.type === "item");
   const looseCount = itemEntries.filter((entry) => entry.parentId && findMapEntry(document, entry.parentId)?.node.type === "compartment").length;
   return `
-    <main class="organization-screen">
+    <main id="main-content" class="organization-screen" tabindex="-1">
       <header class="organization-heading">
         <div><span class="eyebrow">ORGANIZE / 03</span><h1>确认收纳方案</h1><p>${escapeHtml(document.trip.name)} · ${document.containers.length} 个箱包 · ${pouchCount} 个收纳袋</p></div>
         <button class="quiet-button" type="button" data-action="back-to-review">返回调整物品</button>

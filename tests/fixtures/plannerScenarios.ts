@@ -37,4 +37,17 @@ export const PLANNER_SCENARIOS = {
     endDate: "2026-12-06",
     specialNeeds: "冬季、正式会议、晚宴",
   }),
+  soloOutdoor: draft("city", {
+    name: "单人户外公路旅行",
+    origin: "成都",
+    destinationsText: "康定、稻城、亚丁",
+    startDate: "2026-10-03",
+    endDate: "2026-10-12",
+    travelers: 1,
+    tripType: "outdoor",
+    laundryFrequency: "rare",
+    transportModes: ["plane", "car", "ferry"],
+    specialNeeds: "高海拔、寒冷、徒步、露营、摄影",
+    bagSetup: "户外托运行李：衣物区、装备区\n随身徒步包：主仓、快取袋\n待放入：尚未归位",
+  }),
 } as const;

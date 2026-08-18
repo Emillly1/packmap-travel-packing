@@ -1,6 +1,6 @@
 # Delivery Roadmap
 
-Current status: Phase 4 complete. Phase 5 is next.
+Current status: Phase 5 Beta hardening in progress.
 
 ## Phase 0: Product foundation
 
@@ -39,6 +39,8 @@ Completed with deterministic safety rules, transport-aware departure checks, str
 - Five representative trip scenarios, browser tests, accessibility pass, performance budget.
 - Privacy notice, terms, support and feedback path, release notes.
 - Exit: no critical flow failures and no unresolved high-severity data-loss issues.
+
+Beta baseline implemented with five scenario fixtures, keyboard-focus preservation, privacy and usage disclosures, feedback summaries, local-data deletion, bundle budgets, browser CI, and A4/US Letter print regression. Production hosting and an external support destination remain release blockers.
 
 ## Post-MVP
 

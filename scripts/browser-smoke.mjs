@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 const target = await fetch("http://127.0.0.1:9222/json/new?http%3A%2F%2F127.0.0.1%3A4173%2F", { method: "PUT" }).then((response) => response.json());
 const socket = new WebSocket(target.webSocketDebuggerUrl);
 const pending = new Map();
+const runtimeExceptions = [];
 let commandId = 0;
 
 await new Promise((resolveOpen, reject) => {
@@ -13,6 +14,9 @@ await new Promise((resolveOpen, reject) => {
 
 socket.addEventListener("message", (event) => {
   const message = JSON.parse(event.data);
+  if (message.method === "Runtime.exceptionThrown") {
+    runtimeExceptions.push(message.params?.exceptionDetails?.exception?.description ?? message.params?.exceptionDetails?.text ?? "Unknown runtime exception");
+  }
   if (!message.id) return;
   const request = pending.get(message.id);
   if (!request) return;
@@ -61,9 +65,24 @@ await command("Emulation.setDeviceMetricsOverride", { width: 1440, height: 1000,
 await waitFor('document.querySelector("#app")', "PackMap app did not load");
 await evaluate("localStorage.clear(); location.reload()");
 await waitFor('document.querySelector("[data-template=city]")', "Fresh template screen did not load");
+mkdirSync("artifacts", { recursive: true });
+const skipLinkReady = await evaluate('document.querySelector(".skip-link")?.getAttribute("href") === "#main-content" && document.querySelectorAll("#main-content").length === 1');
+if (!skipLinkReady) throw new Error("Skip navigation or main landmark is missing");
+await evaluate('document.querySelector("[data-open-privacy]").click()');
+await waitFor('document.querySelector("[data-privacy-dialog]").open', "Privacy dialog did not open");
+if (!await evaluate('document.querySelector("[data-privacy-dialog]").textContent.includes("没有账号、云同步或分析追踪")')) throw new Error("Privacy disclosure is incomplete");
+await screenshot("phase-5-privacy-desktop.png");
+await evaluate('document.querySelector("[data-privacy-dialog] [data-close-release-dialog]").click()');
+await screenshot("phase-5-template-desktop.png");
+await command("Emulation.setEmulatedMedia", { media: "screen", features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
+const reducedMotionReady = await evaluate('parseFloat(getComputedStyle(document.querySelector("[data-template=city]")).transitionDuration) <= 0.06');
+if (!reducedMotionReady) throw new Error("Reduced-motion preference was not honored");
+await command("Emulation.setEmulatedMedia", { media: "screen", features: [] });
 
 await evaluate('document.querySelector("[data-template=city]").click()');
 await waitFor('document.querySelector("#tripName")', "Trip step did not open");
+const routeFocusOnHeading = await evaluate('document.activeElement === document.querySelector("#main-content h1")');
+if (!routeFocusOnHeading) throw new Error("Route change did not move focus to the page heading");
 await evaluate(`
   document.querySelector("#tripName").value = "秋日意大利测试";
   document.querySelector("#origin").value = "上海";
@@ -112,13 +131,13 @@ if (candidateCountAfterCustom !== candidateCount + 1) throw new Error("Custom ca
 const desktopOverflow = await evaluate("document.documentElement.scrollWidth > window.innerWidth");
 if (desktopOverflow) throw new Error("Desktop review has horizontal overflow");
 
-mkdirSync("artifacts", { recursive: true });
 await screenshot("phase-4-review-desktop.png");
 
 const optionalBefore = await evaluate('document.querySelector("[data-candidate-id=empty-water-bottle]")?.checked');
-await evaluate('document.querySelector("[data-candidate-id=empty-water-bottle]")?.click()');
+await evaluate('document.querySelector("[data-candidate-id=empty-water-bottle]")?.focus(); document.querySelector("[data-candidate-id=empty-water-bottle]")?.click()');
 const optionalAfter = await evaluate('document.querySelector("[data-candidate-id=empty-water-bottle]")?.checked');
 if (optionalBefore !== false || optionalAfter !== true) throw new Error("Candidate toggle did not persist");
+if (!await evaluate('document.activeElement?.dataset.candidateId === "empty-water-bottle"')) throw new Error("Candidate toggle lost keyboard focus after rendering");
 
 await evaluate('document.querySelector("[data-action=confirm-candidates]").click()');
 await waitFor('document.querySelector(".organization-screen")', "Organization confirmation did not open");
@@ -168,6 +187,14 @@ await waitFor('document.querySelector(".packing-workspace")', "Workspace did not
 const mappedItems = await evaluate('document.querySelectorAll(".map-item").length');
 const luggageCount = await evaluate('document.querySelectorAll(".packing-case").length');
 if (mappedItems < 20 || luggageCount !== 3) throw new Error("Packing map was not materialized correctly");
+const unnamedIconButtonCount = await evaluate(`
+  [...document.querySelectorAll(".packing-workspace button")].filter((button) => {
+    const visible = button.offsetParent !== null;
+    const text = button.textContent.trim().replace(/[＋×✓−↶]/g, "").trim();
+    return visible && !text && !button.getAttribute("aria-label") && !button.getAttribute("title");
+  }).length
+`);
+if (unnamedIconButtonCount) throw new Error(`Found ${unnamedIconButtonCount} icon buttons without accessible names`);
 const checkedBagCounts = await evaluate(`
   [...document.querySelectorAll(".packing-case")].slice(0, 2).map((bag) => bag.querySelectorAll(".map-item").length)
 `);
@@ -329,6 +356,13 @@ const printPdf = await command("Page.printToPDF", {
   paperHeight: 11.69,
 });
 writeFileSync(resolve("artifacts", "phase-4-print.pdf"), Buffer.from(printPdf.data, "base64"));
+const letterPdf = await command("Page.printToPDF", {
+  printBackground: true,
+  preferCSSPageSize: false,
+  paperWidth: 8.5,
+  paperHeight: 11,
+});
+writeFileSync(resolve("artifacts", "phase-5-print-letter.pdf"), Buffer.from(letterPdf.data, "base64"));
 await command("Emulation.setEmulatedMedia", { media: "screen" });
 
 await command("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
@@ -347,9 +381,19 @@ await waitFor('document.querySelector(".organization-screen")', "Mobile organiza
 const mobileOrganizationOverflow = await evaluate("document.documentElement.scrollWidth > window.innerWidth");
 if (mobileOrganizationOverflow) throw new Error("Mobile organization confirmation has horizontal overflow");
 await screenshot("organization-confirm-mobile.png");
+await evaluate('window.confirm = () => true; document.querySelector("[data-open-privacy]").click()');
+await waitFor('document.querySelector("[data-privacy-dialog]").open', "Mobile privacy dialog did not open");
+await evaluate('document.querySelector("[data-delete-local-data]").click()');
+await waitFor('document.querySelector("[data-template=city]")', "Complete local data deletion did not reset the app");
+const localDataDeletionReady = await evaluate('!Object.keys(localStorage).some((key) => key.startsWith("packmap."))');
+if (!localDataDeletionReady) throw new Error("Complete local data deletion left PackMap storage behind");
+if (runtimeExceptions.length) throw new Error(`Uncaught runtime exceptions: ${runtimeExceptions.join(" | ")}`);
 
 console.log(JSON.stringify({
   reviewTitle,
+  skipLinkReady,
+  routeFocusOnHeading,
+  reducedMotionReady,
   candidateCount,
   hikingPresent,
   mappedItems,
@@ -364,14 +408,18 @@ console.log(JSON.stringify({
   mobileOverflow,
   mobileReviewOverflow,
   mobileOrganizationOverflow,
+  localDataDeletionReady,
+  runtimeExceptionCount: runtimeExceptions.length,
   checkedBagCounts,
   candidateCountAfterCustom,
   organizationPouchCount,
+  unnamedIconButtonCount,
   proposalPouchOverflow,
   singleCompartmentFill,
   legacyImportedPath,
   itemMoveDialogTitle,
-  screenshots: 9,
+  screenshots: 11,
   printPdf: "artifacts/phase-4-print.pdf",
+  letterPrintPdf: "artifacts/phase-5-print-letter.pdf",
 }, null, 2));
 socket.close();

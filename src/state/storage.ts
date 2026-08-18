@@ -35,6 +35,14 @@ export function clearState(): void {
   }
 }
 
+export function clearAllState(): void {
+  try {
+    [STORAGE_KEY, BACKUP_KEY, IMPORT_BACKUP_KEY, IMPORT_SOURCE_KEY].forEach((key) => window.localStorage.removeItem(key));
+  } catch {
+    // The in-memory reset still succeeds when browser storage is unavailable.
+  }
+}
+
 export function saveImportBackup(state: AppState, sourceText: string): void {
   try {
     window.localStorage.setItem(IMPORT_BACKUP_KEY, JSON.stringify(state));

@@ -45,7 +45,7 @@ export function renderWorkspaceTabs(state: AppState): string {
     <nav class="workspace-view-tabs" aria-label="工作台视图">
       ${VIEW_LABELS.map((view) => {
         const count = view.id === "safety" ? pendingWarnings : view.id === "departure" ? pendingChecks : null;
-        return `<button type="button" data-workspace-view="${view.id}" class="${state.workspaceView === view.id ? "is-active" : ""}">${view.label}${count !== null ? `<span>${count}</span>` : ""}</button>`;
+        return `<button type="button" data-workspace-view="${view.id}" class="${state.workspaceView === view.id ? "is-active" : ""}" ${state.workspaceView === view.id ? 'aria-current="page"' : ""}>${view.label}${count !== null ? `<span>${count}</span>` : ""}</button>`;
       }).join("")}
     </nav>
   `;

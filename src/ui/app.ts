@@ -5,6 +5,7 @@ import { CATEGORY_LABELS, type CandidateItem, type PackingCategory } from "../mo
 import type { Recommendation, TransportRule } from "../models/packing";
 import type { LaundryFrequency, TemplateId, TransportMode, TripDraft, TripType } from "../models/trip";
 import type { AppState, AppStore } from "../state/store";
+import { bindBetaEvents, renderBetaChrome } from "./beta";
 import { bindOrganizationEvents, renderOrganization } from "./organization";
 import { bindWorkspaceEvents, renderWorkspace } from "./workspace";
 
@@ -73,7 +74,7 @@ function renderTemplatePreview(tone: string): string {
 function renderTemplates(): string {
   const featured = TRIP_TEMPLATES.filter((template) => template.id !== "blank");
   return `
-    <main class="template-screen">
+    <main id="main-content" class="template-screen" tabindex="-1">
       <section class="template-intro" aria-labelledby="template-title">
         <div class="intro-copy">
           <span class="eyebrow">NEW TRIP / 01</span>
@@ -113,7 +114,7 @@ function renderWizardNavigation(state: AppState): string {
       <ol>
         ${WIZARD_STEPS.map((step, index) => `
           <li class="${index === state.wizardStep ? "is-active" : ""}">
-            <button type="button" data-step="${index}" ${index > state.wizardStep ? "disabled" : ""}>
+            <button type="button" data-step="${index}" ${index === state.wizardStep ? 'aria-current="step"' : ""} ${index > state.wizardStep ? "disabled" : ""}>
               <span>0${index + 1}</span>${step}
             </button>
           </li>
@@ -210,7 +211,7 @@ function renderWizard(state: AppState): string {
   const titles = ["这次去哪里？", "路上怎么移动？", "你会怎样旅行？", "带哪些箱包？"];
   const body = [renderTripStep, renderTransportStep, renderHabitsStep, renderBagsStep][state.wizardStep](state.draft);
   return `
-    <main class="wizard-screen">
+    <main id="main-content" class="wizard-screen" tabindex="-1">
       <div class="wizard-shell">
         ${renderWizardNavigation(state)}
         <section class="wizard-content">
@@ -271,7 +272,7 @@ function renderReview(state: AppState): string {
   const percentage = allItems.length ? Math.round((selectedCount / allItems.length) * 100) : 0;
 
   return `
-    <main class="review-screen">
+    <main id="main-content" class="review-screen" tabindex="-1">
       <section class="review-heading">
         <div>
           <span class="eyebrow">PACKING REVIEW / 02</span>
@@ -345,7 +346,7 @@ function renderApp(root: HTMLElement, state: AppState): void {
         : state.screen === "organize"
           ? renderOrganization(state)
           : renderWorkspace(state);
-  root.innerHTML = `${renderHeader(state)}${screen}<div class="status-region" role="status" aria-live="polite">${escapeHtml(state.notice ?? "")}</div>`;
+  root.innerHTML = `<a class="skip-link" href="#main-content">跳到主要内容</a>${renderHeader(state)}${screen}${renderBetaChrome()}<div class="status-region" role="status" aria-live="polite" aria-atomic="true">${escapeHtml(state.notice ?? "")}</div>`;
 }
 
 function inputValue(root: HTMLElement, selector: string): string {
@@ -454,20 +455,54 @@ function bindEvents(root: HTMLElement, store: AppStore): void {
   });
   if (store.getState().screen === "organize") bindOrganizationEvents(root, store);
   if (store.getState().screen === "workspace") bindWorkspaceEvents(root, store);
+  bindBetaEvents(root, store);
+}
+
+const FOCUS_ATTRIBUTES = [
+  "data-candidate-id",
+  "data-pack-id",
+  "data-departure-check",
+  "data-workspace-view",
+  "data-template",
+  "data-group-id",
+  "data-collapse-id",
+  "data-search-result",
+] as const;
+
+function focusSelector(element: Element | null): string | null {
+  if (!(element instanceof HTMLElement)) return null;
+  if (element.id) return `#${CSS.escape(element.id)}`;
+  for (const attribute of FOCUS_ATTRIBUTES) {
+    const value = element.getAttribute(attribute);
+    if (value !== null) return `[${attribute}="${CSS.escape(value)}"]`;
+  }
+  return null;
 }
 
 export function mountApp(root: HTMLElement, store: AppStore): () => void {
+  let previousScreen: AppState["screen"] | null = null;
+  let previousWizardStep: number | null = null;
   const update = (state: AppState) => {
     const active = root.ownerDocument.activeElement;
+    const preservedSelector = focusSelector(active);
     const preserveSearchFocus = active instanceof HTMLInputElement && active.id === "workspaceSearch";
     const searchSelection = preserveSearchFocus ? active.selectionStart : null;
+    const routeChanged = previousScreen !== null && (previousScreen !== state.screen || previousWizardStep !== state.wizardStep);
     renderApp(root, state);
     bindEvents(root, store);
-    if (preserveSearchFocus) {
-      const nextSearch = root.querySelector<HTMLInputElement>("#workspaceSearch");
-      nextSearch?.focus();
-      if (searchSelection !== null) nextSearch?.setSelectionRange(searchSelection, searchSelection);
+    const preserved = preservedSelector ? root.querySelector<HTMLElement>(preservedSelector) : null;
+    if (preserved && !routeChanged) {
+      preserved.focus();
+      if (preserveSearchFocus && preserved instanceof HTMLInputElement && searchSelection !== null) {
+        preserved.setSelectionRange(searchSelection, searchSelection);
+      }
+    } else if (routeChanged) {
+      const heading = root.querySelector<HTMLElement>("#main-content h1");
+      heading?.setAttribute("tabindex", "-1");
+      heading?.focus();
     }
+    previousScreen = state.screen;
+    previousWizardStep = state.wizardStep;
   };
   update(store.getState());
   return store.subscribe(update);

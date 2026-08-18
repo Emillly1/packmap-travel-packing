@@ -20,7 +20,7 @@ import { createPackMapDocument, updatePackMapDocument } from "../engine/trip";
 import type { PackingCategory, PlanningResult } from "../models/planning";
 import type { PackMapDocument } from "../models/schema";
 import { EMPTY_TRIP_DRAFT, type TemplateId, type TripDraft } from "../models/trip";
-import { clearState, hasImportBackup, loadImportBackup, loadState, saveImportBackup, saveState } from "./storage";
+import { clearAllState, clearState, hasImportBackup, loadImportBackup, loadState, saveImportBackup, saveState } from "./storage";
 
 export type AppScreen = "templates" | "wizard" | "review" | "organize" | "workspace";
 export type WorkspaceMode = "inspect" | "add-item" | "add-bag" | "add-compartment" | "add-luggage";
@@ -79,7 +79,8 @@ export type AppAction =
   | { type: "RESTORE_IMPORT_BACKUP" }
   | { type: "EDIT_TRIP" }
   | { type: "CANCEL_EDIT" }
-  | { type: "RESET_PROJECT" };
+  | { type: "RESET_PROJECT" }
+  | { type: "DELETE_ALL_LOCAL_DATA" };
 
 export interface AppStore {
   getState(): AppState;
@@ -341,6 +342,7 @@ export function reduceAppState(state: AppState, action: AppAction): AppState {
         error: null,
       };
     case "RESET_PROJECT":
+    case "DELETE_ALL_LOCAL_DATA":
       return { ...initialState, draft: { ...EMPTY_TRIP_DRAFT } };
   }
 }
@@ -389,7 +391,8 @@ export function createAppStore(): AppStore {
         if (action.type === "IMPORT_DOCUMENT") saveImportBackup(state, action.sourceText);
         state = reduceAppState(state, action);
       }
-      if (action.type === "RESET_PROJECT") clearState();
+      if (action.type === "DELETE_ALL_LOCAL_DATA") clearAllState();
+      else if (action.type === "RESET_PROJECT") clearState();
       else saveState(state);
       listeners.forEach((listener) => listener(state));
     },

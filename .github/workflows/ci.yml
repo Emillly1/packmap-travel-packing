@@ -22,3 +22,34 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - run: npm run check:budget
+
+  browser:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Start PackMap
+        run: npm run dev -- --host 127.0.0.1 > /tmp/packmap-vite.log 2>&1 &
+      - name: Wait for PackMap
+        run: for attempt in {1..30}; do curl --fail --silent http://127.0.0.1:4173/ && exit 0; sleep 1; done; exit 1
+      - name: Start Chrome debugging session
+        run: google-chrome --headless=new --no-sandbox --disable-gpu --remote-debugging-address=127.0.0.1 --remote-debugging-port=9222 --user-data-dir=/tmp/packmap-chrome about:blank > /tmp/packmap-chrome.log 2>&1 &
+      - name: Wait for Chrome
+        run: for attempt in {1..30}; do curl --fail --silent http://127.0.0.1:9222/json/version && exit 0; sleep 1; done; exit 1
+      - run: npm run test:browser
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: packmap-browser-evidence
+          path: |
+            artifacts/
+            /tmp/packmap-vite.log
+            /tmp/packmap-chrome.log
