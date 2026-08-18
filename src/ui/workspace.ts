@@ -10,6 +10,7 @@ import {
 import { CATEGORY_LABELS } from "../models/planning";
 import type { BagNode, ContainerTransport, ItemNode, PackingNode } from "../models/packing";
 import type { AppState, AppStore, WorkspaceMode } from "../state/store";
+import { bindContextAddEvents, renderContextAddDialog } from "./contextAdd";
 import { bindReleaseEvents, renderAuxiliaryView, renderPrintSheet, renderWorkspaceTabs } from "./releaseViews";
 
 const CATEGORY_MARKS: Record<string, string> = {
@@ -85,7 +86,7 @@ function renderBag(bag: BagNode, state: AppState, matchedIds: Set<string>, depth
         <button class="pouch-title" type="button" data-select-node="${bag.id}">
           <strong>${escapeHtml(bag.name)}</strong><small>${stats.packed}/${stats.total} 已装</small>
         </button>
-        <span class="pouch-grip" aria-hidden="true">:::</span>
+        <button class="pouch-add" type="button" data-context-add data-context-type="item" data-context-parent="${bag.id}" data-context-path="${escapeHtml(findMapEntry(state.activeDocument!, bag.id)?.path.join(" / ") ?? bag.name)}" title="添加袋内物品" aria-label="添加袋内物品">＋</button>
       </header>
       ${collapsed ? "" : `<div class="pouch-contents">
         ${bag.children.map((child) => child.type === "item"
@@ -113,7 +114,9 @@ function renderLuggage(state: AppState, matchedIds: Set<string>): string {
             <span>0${luggageIndex + 1}</span>
             <strong>${escapeHtml(luggage.name)}</strong>
           </button>
-          <div><b>${TRANSPORT_LABELS[luggage.transport]}</b><small>${stats.packed}/${stats.total} 已装</small></div>
+          <div><b>${TRANSPORT_LABELS[luggage.transport]}</b><small>${stats.packed}/${stats.total} 已装</small>${luggage.children[0]
+            ? `<button class="case-context-add" type="button" data-context-add data-context-type="item" data-context-parent="${luggage.children[0].id}" data-context-path="${escapeHtml(`${luggage.name} / ${luggage.children[0].name}`)}" title="添加物品" aria-label="添加物品">＋</button>`
+            : `<button class="case-context-add" type="button" data-context-add data-context-type="compartment" data-context-parent="${luggage.id}" data-context-path="${escapeHtml(luggage.name)}" title="添加区域" aria-label="添加区域">＋</button>`}</div>
         </header>
         <div class="packing-case__body">
           ${luggage.children.map((compartment) => {
@@ -123,7 +126,7 @@ function renderLuggage(state: AppState, matchedIds: Set<string>): string {
                 data-drop-target="${compartment.id}" data-map-node-id="${compartment.id}">
                 <header>
                   <button type="button" data-select-node="${compartment.id}"><strong>${escapeHtml(compartment.name)}</strong></button>
-                  <span>${compartmentStats.packed}/${compartmentStats.total}</span>
+                  <div><span>${compartmentStats.packed}/${compartmentStats.total}</span><button class="compartment-add" type="button" data-context-add data-context-type="item" data-context-parent="${compartment.id}" data-context-path="${escapeHtml(`${luggage.name} / ${compartment.name}`)}" title="添加物品" aria-label="添加物品">＋</button></div>
                 </header>
                 <div class="compartment-contents">
                   ${compartment.children.map((child) => child.type === "item"
@@ -285,6 +288,7 @@ export function renderWorkspace(state: AppState): string {
   const document = state.activeDocument;
   if (!document) return "";
   const matchedIds = new Set(searchPackingMap(document, state.workspaceSearch).map((entry) => entry.node.id));
+  const looseItems = flattenMap(document.containers).filter((entry) => entry.node.type === "item" && entry.parentId && findMapEntry(document, entry.parentId)?.node.type === "compartment").length;
   return `
     <main class="packing-workspace">
       <section class="workspace-titlebar">
@@ -296,13 +300,14 @@ export function renderWorkspace(state: AppState): string {
         <section class="packing-workspace-grid">
           ${renderInventory(state)}
           <section class="packing-canvas" aria-label="箱包收纳地图">
-            <header><div><span>PACKING BOARD</span><strong>${document.containers.length} 个箱包</strong></div><div class="canvas-actions"><small>拖放已开启</small><button type="button" data-action="rebalance-map" ${document.containers.length < 2 ? "disabled" : ""}>均匀预打包</button></div></header>
+            <header><div><span>PACKING BOARD</span><strong>${document.containers.length} 个箱包</strong></div><div class="canvas-actions"><small>拖放已开启</small><button type="button" data-action="create-pouch-plan" ${looseItems ? "" : "disabled"}>整理成收纳袋</button><button type="button" data-action="rebalance-map" ${document.containers.length < 2 || !looseItems ? "disabled" : ""}>均匀散放物品</button></div></header>
             <div class="packing-canvas__cases">${renderLuggage(state, matchedIds)}</div>
           </section>
           ${renderInspector(state)}
         </section>
       ` : renderAuxiliaryView(state)}
       ${renderPrintSheet(state)}
+      ${renderContextAddDialog()}
     </main>
   `;
 }
@@ -317,6 +322,7 @@ function scrollToMapNode(root: HTMLElement, nodeId: string): void {
 
 export function bindWorkspaceEvents(root: HTMLElement, store: AppStore): void {
   bindReleaseEvents(root, store);
+  bindContextAddEvents(root, store);
   const search = root.querySelector<HTMLInputElement>("#workspaceSearch");
   search?.addEventListener("input", () => store.dispatch({ type: "SET_WORKSPACE_SEARCH", query: search.value }));
   root.querySelector<HTMLElement>("[data-clear-search]")?.addEventListener("click", () => store.dispatch({ type: "SET_WORKSPACE_SEARCH", query: "" }));
@@ -346,6 +352,11 @@ export function bindWorkspaceEvents(root: HTMLElement, store: AppStore): void {
   root.querySelector<HTMLElement>('[data-action="rebalance-map"]')?.addEventListener("click", () => {
     if (window.confirm("重新分配会移动尚未放进收纳袋的物品；收纳袋和袋内物品保持原位。是否继续？")) {
       store.dispatch({ type: "REBALANCE_MAP" });
+    }
+  });
+  root.querySelector<HTMLElement>('[data-action="create-pouch-plan"]')?.addEventListener("click", () => {
+    if (window.confirm("系统会把当前散放物品归入建议收纳袋；已有收纳袋保持不变。是否继续？")) {
+      store.dispatch({ type: "CREATE_POUCH_PLAN" });
     }
   });
   root.querySelectorAll<HTMLElement>("[data-set-all-packed]").forEach((button) => button.addEventListener("click", () =>
@@ -387,6 +398,7 @@ export function bindWorkspaceEvents(root: HTMLElement, store: AppStore): void {
 
   root.querySelectorAll<HTMLElement>("[data-drag-node]").forEach((element) => {
     element.addEventListener("dragstart", (event) => {
+      event.stopPropagation();
       event.dataTransfer?.setData("text/plain", element.dataset.dragNode ?? "");
       event.dataTransfer?.setDragImage(element, 24, 24);
       element.classList.add("is-dragging");

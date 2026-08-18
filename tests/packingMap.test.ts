@@ -7,11 +7,13 @@ import {
   findMapEntry,
   flattenMap,
   moveMapNode,
+  organizeLooseItemsIntoPouches,
   packingStats,
   rebalanceLooseItems,
   searchPackingMap,
   syncPackingMap,
   togglePackedItem,
+  unpackBag,
   updateMapNode,
 } from "../src/engine/packingMap";
 import { generatePackingSuggestions } from "../src/engine/planning";
@@ -22,7 +24,7 @@ import { PLANNER_SCENARIOS } from "./fixtures/plannerScenarios";
 function createMap(): PackMapDocument {
   const draft = {
     ...PLANNER_SCENARIOS.weeklyCity,
-    bagSetup: "托运行李：开放面、袋子面\n随身背包：主仓、前袋",
+    bagSetup: "托运行李：开放面、拉链面\n随身背包：主仓、前袋",
   };
   return syncPackingMap(createPackMapDocument(draft), draft, generatePackingSuggestions(draft));
 }
@@ -33,8 +35,8 @@ describe("packing map engine", () => {
     const ids = flattenMap(document.containers).map((entry) => entry.node.id);
     expect(new Set(ids).size).toBe(ids.length);
     expect(document.containers).toHaveLength(2);
-    expect(findMapEntry(document, "identity-documents")?.path.slice(0, 2)).toEqual(["随身背包", "主仓"]);
-    expect(findMapEntry(document, "hair-care")?.path.slice(0, 2)).toEqual(["托运行李", "袋子面"]);
+    expect(findMapEntry(document, "identity-documents")?.path).toEqual(["随身背包", "主仓", "证件包", "身份证件 / 护照"]);
+    expect(findMapEntry(document, "hair-care")?.path).toEqual(["托运行李", "拉链面", "洗漱包", "洗发与护发用品"]);
     expect(findMapEntry(document, "transit-comfort-kit")?.path.slice(0, 2)).toEqual(["随身背包", "前袋"]);
   });
 
@@ -103,5 +105,24 @@ describe("packing map engine", () => {
     document = moveMapNode(document, secondCheckedItem.node.id, firstCheckedTarget);
     document = rebalanceLooseItems(document);
     expect(flattenMap([document.containers[1]]).some((entry) => entry.node.type === "item")).toBe(true);
+  });
+
+  it("merges newly organized loose items into an existing suggested pouch", () => {
+    let document = createMap();
+    const targetId = document.containers[0].children[1].id;
+    document = addMapNode(document, { type: "item", name: "身体喷雾", quantity: "1 瓶", category: "care", parentId: targetId });
+    document = organizeLooseItemsIntoPouches(document);
+    const washBags = flattenMap(document.containers).filter((entry) => entry.node.type === "bag" && entry.node.name === "洗漱包");
+    expect(washBags).toHaveLength(1);
+    expect(searchPackingMap(document, "身体喷雾")[0]?.path).toContain("洗漱包");
+  });
+
+  it("removes a pouch without deleting the items inside it", () => {
+    let document = createMap();
+    const washBag = flattenMap(document.containers).find((entry) => entry.node.type === "bag" && entry.node.name === "洗漱包");
+    if (!washBag?.parentId) throw new Error("wash bag fixture is missing");
+    document = unpackBag(document, washBag.node.id);
+    expect(findMapEntry(document, washBag.node.id)).toBeUndefined();
+    expect(findMapEntry(document, "hair-care")?.parentId).toBe(washBag.parentId);
   });
 });

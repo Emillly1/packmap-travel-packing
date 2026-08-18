@@ -54,22 +54,29 @@ describe("packing review flow", () => {
     const cleared = reduceAppState(toggled, { type: "SET_GROUP_SELECTION", category: firstGroup.id, selected: false });
     expect(cleared.planningResult?.groups[0].items.every((item) => !item.selected)).toBe(true);
 
-    const confirmed = reduceAppState(cleared, { type: "CONFIRM_CANDIDATES" });
+    const organized = reduceAppState(cleared, { type: "CONFIRM_CANDIDATES" });
+    expect(organized.screen).toBe("organize");
+    expect(organized.planningConfirmed).toBe(false);
+    expect(organized.activeDocument?.containers.length).toBeGreaterThan(0);
+    expect(organized.activeDocument?.containers.flatMap((luggage) => luggage.children).flatMap((compartment) => compartment.children).some((node) => node.type === "bag")).toBe(true);
+
+    const confirmed = reduceAppState(organized, { type: "CONFIRM_ORGANIZATION" });
     expect(confirmed.screen).toBe("workspace");
     expect(confirmed.planningConfirmed).toBe(true);
-    expect(confirmed.activeDocument?.containers.length).toBeGreaterThan(0);
   });
 
   it("returns to the confirmed workspace when trip editing is cancelled", () => {
     const review = reduceAppState(readyState(), { type: "COMPLETE_SETUP" });
-    const workspace = reduceAppState(review, { type: "CONFIRM_CANDIDATES" });
+    const organized = reduceAppState(review, { type: "CONFIRM_CANDIDATES" });
+    const workspace = reduceAppState(organized, { type: "CONFIRM_ORGANIZATION" });
     const editing = reduceAppState(workspace, { type: "EDIT_TRIP" });
     expect(reduceAppState(editing, { type: "CANCEL_EDIT" }).screen).toBe("workspace");
   });
 
   it("tracks map changes and restores the previous document on undo", () => {
     const review = reduceAppState(readyState(), { type: "COMPLETE_SETUP" });
-    const workspace = reduceAppState(review, { type: "CONFIRM_CANDIDATES" });
+    const organized = reduceAppState(review, { type: "CONFIRM_CANDIDATES" });
+    const workspace = reduceAppState(organized, { type: "CONFIRM_ORGANIZATION" });
     const changed = reduceAppState(workspace, { type: "TOGGLE_PACKED_ITEM", itemId: "identity-documents" });
     expect(changed.documentHistory).toHaveLength(1);
     expect(changed.notice).toBe("已更新装入状态。");

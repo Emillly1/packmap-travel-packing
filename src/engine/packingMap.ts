@@ -102,6 +102,8 @@ function allDestinations(containers: LuggageNode[]): Array<{ luggage: LuggageNod
   return containers.flatMap((luggage) => luggage.children.map((compartment) => ({ luggage, compartment })));
 }
 
+type PlacementItem = Pick<ItemNode, "id" | "category" | "transportRule" | "access">;
+
 function compartmentFor(luggage: LuggageNode, item: PlacementItem): CompartmentNode | null {
   if (!luggage.children.length) return null;
   const useSecondary = luggage.transport === "checked"
@@ -109,8 +111,6 @@ function compartmentFor(luggage: LuggageNode, item: PlacementItem): CompartmentN
     : item.category === "transit";
   return luggage.children[useSecondary ? Math.min(1, luggage.children.length - 1) : 0];
 }
-
-type PlacementItem = Pick<ItemNode, "category" | "transportRule" | "access">;
 
 function nestedItemCount(nodes: Array<BagNode | ItemNode>): number {
   return nodes.reduce((count, node) => count + (node.type === "item" ? 1 : nestedItemCount(node.children)), 0);
@@ -143,6 +143,83 @@ function placeCandidate(containers: LuggageNode[], candidate: CandidateItem): vo
   if (target) target.children.push(candidateToItem(candidate));
 }
 
+function suggestedPouchName(item: PlacementItem): string | null {
+  if (item.category === "documents") return "证件包";
+  if (item.category === "electronics") {
+    return ["phone", "laptop", "headphones"].includes(item.id) ? null : "电子配件包";
+  }
+  if (item.category === "clothes") {
+    return ["underwear", "socks"].includes(item.id) ? "内衣收纳袋" : "衣物收纳袋";
+  }
+  if (item.category === "shoes") return null;
+  if (item.category === "care") return "洗漱包";
+  if (item.category === "health") return item.transportRule === "carry-on" || item.access === "airport" || item.access === "first-night"
+    ? "随身药包"
+    : "备用药包";
+  if (item.category === "transit") {
+    if (item.id === "empty-water-bottle") return null;
+    return item.transportRule === "checked" ? "第一晚用品袋" : "途中用品包";
+  }
+  if (item.category === "household") {
+    if (["foldable-tote", "shopping-buffer"].includes(item.id)) return null;
+    if (item.id === "children-transit-kit") return "儿童途中用品包";
+    return "生活用品袋";
+  }
+  return null;
+}
+
+function nextSuggestedBagId(containers: LuggageNode[], index: number): string {
+  const existing = new Set(flattenMap(containers).map((entry) => entry.node.id));
+  let suffix = index + 1;
+  let id = `suggested-bag-${suffix}`;
+  while (existing.has(id)) id = `suggested-bag-${++suffix}`;
+  return id;
+}
+
+function cloneBag(node: BagNode): BagNode {
+  return {
+    ...node,
+    children: node.children.map((child) => child.type === "bag" ? cloneBag(child) : { ...child }),
+  };
+}
+
+export function organizeLooseItemsIntoPouches(document: PackMapDocument): PackMapDocument {
+  const looseItems = document.containers.flatMap((luggage) => luggage.children.flatMap((compartment) =>
+    compartment.children.filter((node): node is ItemNode => node.type === "item")));
+  if (!looseItems.length) return document;
+  const containers = document.containers.map((luggage) => ({
+    ...luggage,
+    children: luggage.children.map((compartment) => ({
+      ...compartment,
+      children: compartment.children.flatMap((node) => node.type === "bag" ? [cloneBag(node)] : []),
+    })),
+  }));
+  const pouchGroups = new Map<string, ItemNode[]>();
+  const remainLoose: ItemNode[] = [];
+  looseItems.forEach((item) => {
+    const pouchName = suggestedPouchName(item);
+    if (!pouchName) {
+      remainLoose.push(item);
+      return;
+    }
+    pouchGroups.set(pouchName, [...(pouchGroups.get(pouchName) ?? []), item]);
+  });
+  [...pouchGroups.entries()].forEach(([name, items], index) => {
+    const existing = flattenMap(containers).find((entry) => entry.node.type === "bag" && entry.node.name === name);
+    if (existing?.node.type === "bag") {
+      existing.node.children.push(...items);
+      return;
+    }
+    const target = targetForItem(containers, items[0]);
+    if (target) target.children.push({ id: nextSuggestedBagId(containers, index), type: "bag", name, children: items });
+  });
+  remainLoose.forEach((item) => {
+    const target = targetForItem(containers, item);
+    if (target) target.children.push(item);
+  });
+  return touch({ ...document, containers });
+}
+
 function updateCandidateNodes(nodes: Array<BagNode | ItemNode>, candidates: Map<string, CandidateItem>): Array<BagNode | ItemNode> {
   const catalogIds = new Set(ITEM_CATALOG.map((item) => item.id));
   return nodes.flatMap<BagNode | ItemNode>((node): Array<BagNode | ItemNode> => {
@@ -170,6 +247,7 @@ function touch(document: PackMapDocument): PackMapDocument {
 export function syncPackingMap(document: PackMapDocument, draft: TripDraft, result: PlanningResult): PackMapDocument {
   const selected = selectedCandidates(result);
   const candidateById = new Map(selected.map((candidate) => [candidate.id, candidate]));
+  const isNewMap = document.containers.length === 0;
   const containers = document.containers.length
     ? document.containers.map((luggage) => ({
         ...luggage,
@@ -182,7 +260,8 @@ export function syncPackingMap(document: PackMapDocument, draft: TripDraft, resu
 
   const existingIds = new Set(flattenMap(containers).filter((entry) => entry.node.type === "item").map((entry) => entry.node.id));
   selected.filter((candidate) => !existingIds.has(candidate.id)).forEach((candidate) => placeCandidate(containers, candidate));
-  return touch({ ...document, containers });
+  const nextDocument = touch({ ...document, containers });
+  return isNewMap ? organizeLooseItemsIntoPouches(nextDocument) : nextDocument;
 }
 
 export function rebalanceLooseItems(document: PackMapDocument): PackMapDocument {
@@ -373,6 +452,39 @@ export function updateMapNode(document: PackMapDocument, nodeId: string, patch: 
 function removeFromBagChildren(children: Array<BagNode | ItemNode>, nodeId: string): Array<BagNode | ItemNode> {
   return children.filter((child) => child.id !== nodeId).map((child) =>
     child.type === "bag" ? { ...child, children: removeFromBagChildren(child.children, nodeId) } : child);
+}
+
+function unpackFromBagChildren(
+  children: Array<BagNode | ItemNode>,
+  bagId: string,
+): { children: Array<BagNode | ItemNode>; unpacked: boolean } {
+  let unpacked = false;
+  const next = children.flatMap<BagNode | ItemNode>((child): Array<BagNode | ItemNode> => {
+    if (child.type !== "bag") return [child];
+    if (child.id === bagId) {
+      unpacked = true;
+      return child.children;
+    }
+    const nested = unpackFromBagChildren(child.children, bagId);
+    if (nested.unpacked) unpacked = true;
+    return [{ ...child, children: nested.children }];
+  });
+  return { children: next, unpacked };
+}
+
+export function unpackBag(document: PackMapDocument, bagId: string): PackMapDocument {
+  const entry = findMapEntry(document, bagId);
+  if (entry?.node.type !== "bag") return document;
+  let unpacked = false;
+  const containers = document.containers.map((luggage) => ({
+    ...luggage,
+    children: luggage.children.map((compartment) => {
+      const result = unpackFromBagChildren(compartment.children, bagId);
+      if (result.unpacked) unpacked = true;
+      return { ...compartment, children: result.children };
+    }),
+  }));
+  return unpacked ? touch({ ...document, containers }) : document;
 }
 
 export function deleteMapNode(document: PackMapDocument, nodeId: string): PackMapDocument {

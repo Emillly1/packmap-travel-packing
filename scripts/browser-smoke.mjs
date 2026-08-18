@@ -85,7 +85,7 @@ await evaluate(`
 `);
 await waitFor('document.querySelector("#bagSetup")', "Luggage step did not open");
 await evaluate(`
-  document.querySelector("#bagSetup").value = "托运行李 A：开放面、袋子面\\n托运行李 B：开放面、袋子面\\n随身背包：主仓、前袋";
+  document.querySelector("#bagSetup").value = "托运行李 A：开放面、拉链面\\n托运行李 B：开放面、拉链面\\n随身背包：主仓、前袋";
   document.querySelector("[data-action=next]").click();
 `);
 await waitFor('document.querySelector(".review-screen")', "Packing review did not open");
@@ -121,6 +121,38 @@ const optionalAfter = await evaluate('document.querySelector("[data-candidate-id
 if (optionalBefore !== false || optionalAfter !== true) throw new Error("Candidate toggle did not persist");
 
 await evaluate('document.querySelector("[data-action=confirm-candidates]").click()');
+await waitFor('document.querySelector(".organization-screen")', "Organization confirmation did not open");
+const organizationPouchCount = await evaluate('document.querySelectorAll(".proposal-pouch").length');
+if (organizationPouchCount < 5) throw new Error("Suggested pouch hierarchy was not generated");
+if (!await evaluate('[...document.querySelectorAll(".proposal-item span")].some((node) => node.textContent === "便携热水袋")')) {
+  throw new Error("Custom review item did not reach the organization proposal");
+}
+await evaluate(`
+  (() => {
+    const add = document.querySelector(".proposal-pouch [data-context-add]");
+    add.click();
+    const form = document.querySelector("[data-context-add-form]");
+    form.querySelector("[name=name]").value = "方案确认便签";
+    form.querySelector("[name=quantity]").value = "1 份";
+    form.requestSubmit();
+  })()
+`);
+await waitFor('[...document.querySelectorAll(".proposal-item span")].some((node) => node.textContent === "方案确认便签")', "Contextual add did not update the proposal");
+await evaluate(`
+  (() => {
+    const form = document.querySelector("[data-organize-rename]");
+    form.querySelector("[name=name]").value = "随身资料包";
+    form.requestSubmit();
+  })()
+`);
+await waitFor('document.querySelector("[data-organize-rename] input")?.value === "随身资料包"', "Pouch rename did not persist");
+await evaluate('document.querySelector("[data-organize-item]").click()');
+await waitFor('document.querySelector("[data-organize-item-dialog]").open', "Item destination dialog did not open");
+const itemMoveDialogTitle = await evaluate('document.querySelector("[data-organize-item-title]").textContent.trim()');
+if (!itemMoveDialogTitle.startsWith("移动「")) throw new Error("Item destination dialog did not identify the selected item");
+await evaluate('document.querySelector("[data-close-item-dialog]").click()');
+await screenshot("organization-confirm-desktop.png");
+await evaluate('document.querySelector("[data-action=confirm-organization]").click()');
 await waitFor('document.querySelector(".packing-workspace")', "Workspace did not open after confirmation");
 const mappedItems = await evaluate('document.querySelectorAll(".map-item").length');
 const luggageCount = await evaluate('document.querySelectorAll(".packing-case").length');
@@ -128,7 +160,7 @@ if (mappedItems < 20 || luggageCount !== 3) throw new Error("Packing map was not
 const checkedBagCounts = await evaluate(`
   [...document.querySelectorAll(".packing-case")].slice(0, 2).map((bag) => bag.querySelectorAll(".map-item").length)
 `);
-if (checkedBagCounts.some((count) => count === 0) || Math.abs(checkedBagCounts[0] - checkedBagCounts[1]) > 1) {
+if (checkedBagCounts.some((count) => count === 0) || Math.abs(checkedBagCounts[0] - checkedBagCounts[1]) > 2) {
   throw new Error(`Checked luggage was not balanced: ${checkedBagCounts.join(", ")}`);
 }
 if (!await evaluate('[...document.querySelectorAll(".map-item strong")].some((node) => node.textContent === "便携热水袋")')) {
@@ -163,18 +195,17 @@ await evaluate(`
   input.value = "身份证件";
   input.dispatchEvent(new Event("input", { bubbles: true }));
 `);
-await waitFor('document.querySelector(".search-result small")?.textContent.includes("袋子面")', "Search did not report the moved item path");
+await waitFor('document.querySelector(".search-result small")?.textContent.includes("拉链面")', "Search did not report the moved item path");
 const movedPath = await evaluate('document.querySelector(".search-result small").textContent.trim()');
 await evaluate('document.querySelector("[data-clear-search]").click()');
 
-await evaluate('document.querySelector("[data-workspace-mode=add-item]").click()');
-await waitFor('document.querySelector("[data-create-mode=add-item]")', "Item editor did not open");
+await evaluate('[...document.querySelectorAll(".case-context-add")][1].click()');
+await waitFor('document.querySelector("[data-context-dialog]").open', "Context item dialog did not open");
 await evaluate(`
   (() => {
-    const form = document.querySelector("[data-create-mode=add-item]");
+    const form = document.querySelector("[data-context-add-form]");
     form.querySelector("[name=name]").value = "备用框架眼镜";
     form.querySelector("[name=quantity]").value = "1 副";
-    form.querySelector("[name=parentId]").value = "luggage-2-compartment-1";
     form.requestSubmit();
   })()
 `);
@@ -258,6 +289,11 @@ await waitFor('document.querySelector(".custom-candidate-form")', "Mobile review
 const mobileReviewOverflow = await evaluate("document.documentElement.scrollWidth > window.innerWidth");
 if (mobileReviewOverflow) throw new Error("Mobile custom candidate review has horizontal overflow");
 await screenshot("feedback-review-mobile.png");
+await evaluate('document.querySelector("[data-action=confirm-candidates]").click()');
+await waitFor('document.querySelector(".organization-screen")', "Mobile organization confirmation did not open");
+const mobileOrganizationOverflow = await evaluate("document.documentElement.scrollWidth > window.innerWidth");
+if (mobileOrganizationOverflow) throw new Error("Mobile organization confirmation has horizontal overflow");
+await screenshot("organization-confirm-mobile.png");
 
 console.log(JSON.stringify({
   reviewTitle,
@@ -274,9 +310,12 @@ console.log(JSON.stringify({
   titleAfterInvalidImport,
   mobileOverflow,
   mobileReviewOverflow,
+  mobileOrganizationOverflow,
   checkedBagCounts,
   candidateCountAfterCustom,
-  screenshots: 6,
+  organizationPouchCount,
+  itemMoveDialogTitle,
+  screenshots: 8,
   printPdf: "artifacts/phase-4-print.pdf",
 }, null, 2));
 socket.close();

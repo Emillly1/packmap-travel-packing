@@ -4,10 +4,12 @@ import {
   deleteMapNode,
   findMapEntry,
   moveMapNode,
+  organizeLooseItemsIntoPouches,
   rebalanceLooseItems,
   setAllItemsPacked,
   syncPackingMap,
   togglePackedItem,
+  unpackBag,
   updateMapNode,
   type MapNodePatch,
   type NewMapNode,
@@ -20,7 +22,7 @@ import type { PackMapDocument } from "../models/schema";
 import { EMPTY_TRIP_DRAFT, type TemplateId, type TripDraft } from "../models/trip";
 import { clearState, hasImportBackup, loadImportBackup, loadState, saveImportBackup, saveState } from "./storage";
 
-export type AppScreen = "templates" | "wizard" | "review" | "workspace";
+export type AppScreen = "templates" | "wizard" | "review" | "organize" | "workspace";
 export type WorkspaceMode = "inspect" | "add-item" | "add-bag" | "add-compartment" | "add-luggage";
 export type WorkspaceView = "map" | "safety" | "departure" | "data";
 
@@ -53,6 +55,8 @@ export type AppAction =
   | { type: "SET_GROUP_SELECTION"; category: PackingCategory; selected: boolean }
   | { type: "ADD_CUSTOM_CANDIDATE"; input: CustomCandidateInput }
   | { type: "CONFIRM_CANDIDATES" }
+  | { type: "BACK_TO_REVIEW" }
+  | { type: "CONFIRM_ORGANIZATION" }
   | { type: "REVIEW_CANDIDATES" }
   | { type: "SET_WORKSPACE_SEARCH"; query: string }
   | { type: "SELECT_MAP_NODE"; nodeId: string | null }
@@ -63,9 +67,11 @@ export type AppAction =
   | { type: "SET_ALL_PACKED"; packed: boolean }
   | { type: "MOVE_MAP_NODE"; nodeId: string; targetId: string }
   | { type: "REBALANCE_MAP" }
+  | { type: "CREATE_POUCH_PLAN" }
   | { type: "ADD_MAP_NODE"; input: NewMapNode }
   | { type: "UPDATE_MAP_NODE"; nodeId: string; patch: MapNodePatch }
   | { type: "DELETE_MAP_NODE"; nodeId: string }
+  | { type: "UNPACK_BAG"; bagId: string }
   | { type: "UNDO_MAP_CHANGE" }
   | { type: "ACKNOWLEDGE_WARNING"; warningId: string }
   | { type: "TOGGLE_DEPARTURE_CHECK"; checkId: string }
@@ -206,16 +212,31 @@ export function reduceAppState(state: AppState, action: AppAction): AppState {
     case "CONFIRM_CANDIDATES":
       return {
         ...state,
-        screen: "workspace",
+        screen: "organize",
         activeDocument: state.activeDocument && state.planningResult
           ? refreshSafetyData(syncPackingMap(state.activeDocument, state.draft, state.planningResult))
           : state.activeDocument,
+        planningConfirmed: false,
+        workspaceMode: "inspect",
+        workspaceView: "map",
+        selectedMapNodeId: null,
+        documentHistory: [],
+        notice: "候选清单已生成收纳方案。",
+        error: null,
+      };
+    case "BACK_TO_REVIEW":
+      return { ...state, screen: "review", error: null };
+    case "CONFIRM_ORGANIZATION":
+      return {
+        ...state,
+        screen: "workspace",
+        activeDocument: state.activeDocument ? refreshSafetyData(state.activeDocument) : null,
         planningConfirmed: true,
         workspaceMode: "inspect",
         workspaceView: "map",
         selectedMapNodeId: null,
         documentHistory: [],
-        notice: "候选清单已建立为收纳地图。",
+        notice: "收纳方案已确认，可以开始打包。",
         error: null,
       };
     case "REVIEW_CANDIDATES":
@@ -243,6 +264,8 @@ export function reduceAppState(state: AppState, action: AppAction): AppState {
       return applyDocumentMutation(state, (document) => moveMapNode(document, action.nodeId, action.targetId), "物品位置已更新。");
     case "REBALANCE_MAP":
       return applyDocumentMutation(state, rebalanceLooseItems, "未归袋物品已按箱包角色均匀分配，可撤销。");
+    case "CREATE_POUCH_PLAN":
+      return applyDocumentMutation(state, organizeLooseItemsIntoPouches, "散放物品已整理成建议收纳袋，可撤销。");
     case "ADD_MAP_NODE": {
       const next = applyDocumentMutation(state, (document) => addMapNode(document, action.input), "新内容已加入地图。");
       return { ...next, workspaceMode: "inspect" };
@@ -253,6 +276,8 @@ export function reduceAppState(state: AppState, action: AppAction): AppState {
       const next = applyDocumentMutation(state, (document) => deleteMapNode(document, action.nodeId), "内容已从地图移除。");
       return { ...next, selectedMapNodeId: null, workspaceMode: "inspect" };
     }
+    case "UNPACK_BAG":
+      return applyDocumentMutation(state, (document) => unpackBag(document, action.bagId), "收纳袋已移除，袋内物品保留在原区域，可撤销。");
     case "UNDO_MAP_CHANGE": {
       const previous = state.documentHistory.at(-1);
       if (!previous) return { ...state, notice: "没有可以撤销的操作。" };
@@ -319,7 +344,7 @@ export function reduceAppState(state: AppState, action: AppAction): AppState {
 }
 
 function isUsableState(value: AppState | null): value is AppState {
-  return Boolean(value && ["templates", "wizard", "review", "workspace"].includes(value.screen) && value.draft);
+  return Boolean(value && ["templates", "wizard", "review", "organize", "workspace"].includes(value.screen) && value.draft);
 }
 
 function normalizeState(value: AppState): AppState {

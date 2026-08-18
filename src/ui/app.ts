@@ -5,6 +5,7 @@ import { CATEGORY_LABELS, type CandidateItem, type PackingCategory } from "../mo
 import type { Recommendation, TransportRule } from "../models/packing";
 import type { LaundryFrequency, TemplateId, TransportMode, TripDraft, TripType } from "../models/trip";
 import type { AppState, AppStore } from "../state/store";
+import { bindOrganizationEvents, renderOrganization } from "./organization";
 import { bindWorkspaceEvents, renderWorkspace } from "./workspace";
 
 const WIZARD_STEPS = ["行程", "交通", "习惯", "箱包"] as const;
@@ -42,6 +43,8 @@ function splitBagSetup(value: string): Array<{ name: string; compartments: strin
 function renderHeader(state: AppState): string {
   const status = state.screen === "review"
     ? "候选清单待确认"
+    : state.screen === "organize"
+      ? "收纳方案待确认"
     : state.activeDocument
       ? "旅行已保存"
       : state.screen === "wizard"
@@ -193,7 +196,7 @@ function renderBagsStep(draft: TripDraft): string {
   return `
     <div class="bag-layout">
       <label class="field">一级目录：箱包与区域
-        <textarea id="bagSetup" rows="12" placeholder="托运行李：开放面、袋子面&#10;随身背包：主仓、前袋">${escapeHtml(draft.bagSetup)}</textarea>
+        <textarea id="bagSetup" rows="12" placeholder="托运行李：开放面、拉链面&#10;随身背包：主仓、前袋">${escapeHtml(draft.bagSetup)}</textarea>
       </label>
       <section class="directory-preview" aria-live="polite">
         <strong>结构预览</strong>
@@ -324,8 +327,8 @@ function renderReview(state: AppState): string {
             <div><dt>托运物品</dt><dd>${allItems.filter((item) => item.selected && item.transportRule === "checked").length}</dd></div>
             <div><dt>落地购买</dt><dd>${allItems.filter((item) => item.selected && item.recommendation === "buy-local").length}</dd></div>
           </dl>
-          <button class="primary-button review-confirm" type="button" data-action="confirm-candidates" ${selectedCount === 0 ? "disabled" : ""}>确认清单并进入地图</button>
-          <small>之后仍可回来调整选择。</small>
+          <button class="primary-button review-confirm" type="button" data-action="confirm-candidates" ${selectedCount === 0 ? "disabled" : ""}>下一步：规划收纳</button>
+          <small>下一步确认收纳袋与箱包位置。</small>
         </aside>
       </section>
     </main>
@@ -339,7 +342,9 @@ function renderApp(root: HTMLElement, state: AppState): void {
       ? renderWizard(state)
       : state.screen === "review"
         ? renderReview(state)
-        : renderWorkspace(state);
+        : state.screen === "organize"
+          ? renderOrganization(state)
+          : renderWorkspace(state);
   root.innerHTML = `${renderHeader(state)}${screen}<div class="status-region" role="status" aria-live="polite">${escapeHtml(state.notice ?? "")}</div>`;
 }
 
@@ -447,6 +452,7 @@ function bindEvents(root: HTMLElement, store: AppStore): void {
   bagSetup?.addEventListener("input", () => {
     if (preview) preview.innerHTML = renderBagPreview(bagSetup.value);
   });
+  if (store.getState().screen === "organize") bindOrganizationEvents(root, store);
   if (store.getState().screen === "workspace") bindWorkspaceEvents(root, store);
 }
 

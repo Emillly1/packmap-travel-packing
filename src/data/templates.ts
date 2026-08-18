@@ -37,7 +37,7 @@ export const TRIP_TEMPLATES: TripTemplate[] = [
       tripType: "study",
       transportModes: ["plane", "train"],
       specialNeeds: "多季节、学生通勤、拍照、正式活动",
-      bagSetup: "托运行李 A：开放面、袋子面\n托运行李 B：开放面、袋子面\n随身双肩包：主仓、前袋\n待放入：准备购买、尚未归位",
+      bagSetup: "托运行李 A：开放面、拉链面\n托运行李 B：开放面、拉链面\n随身双肩包：主仓、前袋\n待放入：准备购买、尚未归位",
     },
   },
   {
