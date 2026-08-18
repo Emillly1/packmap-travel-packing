@@ -100,7 +100,7 @@ const desktopOverflow = await evaluate("document.documentElement.scrollWidth > w
 if (desktopOverflow) throw new Error("Desktop review has horizontal overflow");
 
 mkdirSync("artifacts", { recursive: true });
-await screenshot("phase-3-review-desktop.png");
+await screenshot("phase-4-review-desktop.png");
 
 const optionalBefore = await evaluate('document.querySelector("[data-candidate-id=empty-water-bottle]")?.checked');
 await evaluate('document.querySelector("[data-candidate-id=empty-water-bottle]")?.click()');
@@ -163,14 +163,72 @@ await waitFor(`!document.querySelector("[data-map-node-id='${customItemId}']")?.
 
 const desktopWorkspaceOverflow = await evaluate("document.documentElement.scrollWidth > window.innerWidth");
 if (desktopWorkspaceOverflow) throw new Error("Desktop workspace has horizontal overflow");
-await screenshot("phase-3-workspace-desktop.png");
+await screenshot("phase-4-workspace-desktop.png");
+
+await evaluate('document.querySelector("[data-workspace-view=safety]").click()');
+await waitFor('document.querySelector(".safety-view")', "Safety view did not open");
+const warningCount = await evaluate('document.querySelectorAll(".warning-row").length');
+const highWarningCount = await evaluate('document.querySelectorAll(".warning-row--high").length');
+if (warningCount < 2 || highWarningCount < 1) throw new Error("Transport safety conflicts were not detected");
+await evaluate('document.querySelector("[data-warning-id]").click()');
+await waitFor('document.querySelector(".warning-row.is-acknowledged")', "Warning acknowledgement did not persist");
+await screenshot("phase-4-safety-desktop.png");
+
+await evaluate('document.querySelector("[data-workspace-view=departure]").click()');
+await waitFor('document.querySelector(".departure-view")', "Departure view did not open");
+const departureTotal = await evaluate('document.querySelectorAll("[data-departure-check]").length');
+await evaluate('document.querySelector("[data-departure-check]").click()');
+await waitFor('document.querySelector(".departure-check.is-checked")', "Departure check did not persist");
+
+await evaluate('document.querySelector("[data-workspace-view=data]").click()');
+await waitFor('document.querySelector(".data-view")', "Data view did not open");
+await evaluate(`
+  (() => {
+    const form = document.querySelector("[data-import-paste]");
+    form.querySelector("textarea").value = "not-json";
+    form.requestSubmit();
+  })()
+`);
+await waitFor('document.querySelector(".data-error")?.textContent.includes("有效的 JSON")', "Malformed import did not fail safely");
+const titleAfterInvalidImport = await evaluate('document.querySelector(".workspace-titlebar h1").textContent.trim()');
+if (titleAfterInvalidImport !== "秋日意大利测试") throw new Error("Malformed import overwrote the active trip");
+
+await evaluate(`
+  (() => {
+    window.confirm = () => true;
+    const state = JSON.parse(localStorage.getItem("packmap.app-state.v2"));
+    const imported = structuredClone(state.activeDocument);
+    imported.trip.name = "导入恢复测试";
+    const form = document.querySelector("[data-import-paste]");
+    form.querySelector("textarea").value = JSON.stringify(imported);
+    form.requestSubmit();
+  })()
+`);
+await waitFor('document.querySelector(".workspace-titlebar h1")?.textContent.trim() === "导入恢复测试"', "Valid import did not replace the trip");
+await evaluate('document.querySelector("[data-workspace-view=data]").click()');
+await waitFor('!document.querySelector("[data-action=restore-import-backup]").disabled', "Import backup was not created");
+await evaluate('document.querySelector("[data-action=restore-import-backup]").click()');
+await waitFor('document.querySelector(".workspace-titlebar h1")?.textContent.trim() === "秋日意大利测试"', "Import backup restore failed");
+
+await evaluate('document.querySelector("[data-workspace-view=data]").click()');
+await command("Emulation.setEmulatedMedia", { media: "print" });
+await waitFor('getComputedStyle(document.querySelector(".print-sheet")).display === "block"', "Print sheet did not render");
+await screenshot("phase-4-print.png");
+const printPdf = await command("Page.printToPDF", {
+  printBackground: true,
+  preferCSSPageSize: true,
+  paperWidth: 8.27,
+  paperHeight: 11.69,
+});
+writeFileSync(resolve("artifacts", "phase-4-print.pdf"), Buffer.from(printPdf.data, "base64"));
+await command("Emulation.setEmulatedMedia", { media: "screen" });
 
 await command("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
-await evaluate('document.querySelector("[data-select-node=identity-documents]").click()');
-await waitFor('document.querySelector("[data-update-node=identity-documents]")', "Mobile item editor did not open");
+await evaluate('document.querySelector("[data-workspace-view=safety]").click()');
+await waitFor('document.querySelector(".safety-view")', "Mobile safety view did not open");
 const mobileOverflow = await evaluate("document.documentElement.scrollWidth > window.innerWidth");
-if (mobileOverflow) throw new Error("Mobile workspace has horizontal overflow");
-await screenshot("phase-3-workspace-mobile.png");
+if (mobileOverflow) throw new Error("Mobile safety view has horizontal overflow");
+await screenshot("phase-4-safety-mobile.png");
 
 console.log(JSON.stringify({
   reviewTitle,
@@ -181,7 +239,12 @@ console.log(JSON.stringify({
   movedPath,
   desktopOverflow,
   desktopWorkspaceOverflow,
+  warningCount,
+  highWarningCount,
+  departureTotal,
+  titleAfterInvalidImport,
   mobileOverflow,
-  screenshots: 3,
+  screenshots: 5,
+  printPdf: "artifacts/phase-4-print.pdf",
 }, null, 2));
 socket.close();

@@ -24,8 +24,10 @@ function readyState(): AppState {
     workspaceSearch: "",
     selectedMapNodeId: null,
     workspaceMode: "inspect",
+    workspaceView: "map",
     collapsedNodeIds: [],
     documentHistory: [],
+    importBackupAvailable: false,
     notice: null,
     error: null,
   };

@@ -29,3 +29,7 @@ The existing PackMap organizer is a static single-file application with proven f
 7. Replace the public entry point only after parity and export recovery are verified.
 
 The legacy application remains usable throughout migration.
+
+## Current status
+
+The formal application now imports validated `2.0.0` documents and migrates legacy `1.0` documents through tested fixtures. Every successful replacement first creates a dedicated recovery point; malformed or unsupported data cannot overwrite the active trip.

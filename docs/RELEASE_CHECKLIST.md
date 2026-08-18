@@ -8,10 +8,10 @@
 
 ## Data safety
 
-- [ ] Current and previous schema fixtures import successfully.
-- [ ] Export then import preserves trip, hierarchy, quantities, states, warnings, and checks.
-- [ ] Invalid input cannot overwrite the active document.
-- [ ] Migration creates a restorable backup.
+- [x] Current and previous schema fixtures import successfully.
+- [x] Export then import preserves trip, hierarchy, quantities, states, warnings, and checks.
+- [x] Invalid input cannot overwrite the active document.
+- [x] Migration creates a restorable backup.
 
 ## Quality
 
@@ -23,8 +23,8 @@
 
 ## Safety
 
-- [ ] Carry-on and checked warnings are phrased as guidance where rules vary.
-- [ ] Power banks, blades, liquids, valuables, medicine, and essential eyewear are audited.
+- [x] Carry-on and checked warnings are phrased as guidance where rules vary.
+- [x] Power banks, blades, liquids, valuables, medicine, and essential eyewear are audited.
 - [ ] Medical, immigration, and airline limitations are visible where relevant.
 
 ## Operations

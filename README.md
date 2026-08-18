@@ -2,9 +2,11 @@
 
 PackMap turns trip details into an actionable packing map: what to bring, what to buy locally, and where every item belongs.
 
-This repository is the maintainable product rewrite of the original single-file organizer. The current product slice includes trip templates, guided setup, deterministic packing recommendations, candidate review, and an interactive luggage map.
+This repository is the maintainable product rewrite of the original single-file organizer. The current product slice includes trip templates, guided setup, deterministic packing recommendations, candidate review, an interactive luggage map, transport safety review, departure checks, and local-first data portability.
 
 The packing workspace supports automatic first placement, nested pouches, full-path search, packed status, drag-and-drop movement, touch-friendly destination controls, map editing, and ten-step undo.
+
+The release workspace also provides transport-aware warnings, a reusable departure checklist, lossless JSON and readable TXT exports, validated imports, legacy `1.0` migration, a dedicated pre-import recovery point, and a print-ready packing report.
 
 ## Product principles
 

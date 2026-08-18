@@ -18,6 +18,7 @@ interface PackMapDocument {
   containers: LuggageNode[];
   departureChecks: DepartureCheck[];
   warnings: Warning[];
+  metadata?: Record<string, unknown>;
 }
 ```
 
@@ -48,4 +49,5 @@ Top-level nodes must be luggage. Items cannot have children. IDs are unique with
 - Preserve unknown non-conflicting fields in `metadata` where practical.
 - Normalize `carry_on` to `carry-on` internally.
 - Back up the raw source before replacement.
+- Keep the pre-import recovery point separate from routine autosave history.
 - Never silently drop quantities, warnings, transport requirements, or stage assignments.

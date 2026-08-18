@@ -47,6 +47,7 @@ export interface DepartureCheck {
   id: string;
   name: string;
   checked: boolean;
+  group?: "carry" | "documents" | "transport" | "arrival" | "home";
 }
 
 export interface PackingWarning {

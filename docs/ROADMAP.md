@@ -1,6 +1,6 @@
 # Delivery Roadmap
 
-Current status: Phase 3 complete. Phase 4 is next.
+Current status: Phase 4 complete. Phase 5 is next.
 
 ## Phase 0: Product foundation
 
@@ -31,6 +31,8 @@ Current status: Phase 3 complete. Phase 4 is next.
 - Transport audits, first-night checks, JSON/TXT import-export, print, backups.
 - Legacy `1.0` migration.
 - Exit: all original organizer capabilities are available in the new architecture.
+
+Completed with deterministic safety rules, transport-aware departure checks, strict `2.0.0` validation, lossless round trips, guarded imports, dedicated recovery, and paginated print output.
 
 ## Phase 5: Beta and release
 

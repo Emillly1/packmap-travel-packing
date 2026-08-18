@@ -12,14 +12,16 @@ import {
   type NewMapNode,
 } from "../engine/packingMap";
 import { generatePackingSuggestions, reconcilePlanningSelections } from "../engine/planning";
+import { acknowledgeWarning, refreshSafetyData, toggleDepartureCheck } from "../engine/safety";
 import { createPackMapDocument, updatePackMapDocument } from "../engine/trip";
 import type { PackingCategory, PlanningResult } from "../models/planning";
 import type { PackMapDocument } from "../models/schema";
 import { EMPTY_TRIP_DRAFT, type TemplateId, type TripDraft } from "../models/trip";
-import { clearState, loadState, saveState } from "./storage";
+import { clearState, hasImportBackup, loadImportBackup, loadState, saveImportBackup, saveState } from "./storage";
 
 export type AppScreen = "templates" | "wizard" | "review" | "workspace";
 export type WorkspaceMode = "inspect" | "add-item" | "add-bag" | "add-compartment" | "add-luggage";
+export type WorkspaceView = "map" | "safety" | "departure" | "data";
 
 export interface AppState {
   screen: AppScreen;
@@ -32,8 +34,10 @@ export interface AppState {
   workspaceSearch: string;
   selectedMapNodeId: string | null;
   workspaceMode: WorkspaceMode;
+  workspaceView: WorkspaceView;
   collapsedNodeIds: string[];
   documentHistory: PackMapDocument[];
+  importBackupAvailable: boolean;
   notice: string | null;
   error: string | null;
 }
@@ -51,6 +55,7 @@ export type AppAction =
   | { type: "SET_WORKSPACE_SEARCH"; query: string }
   | { type: "SELECT_MAP_NODE"; nodeId: string | null }
   | { type: "SET_WORKSPACE_MODE"; mode: WorkspaceMode }
+  | { type: "SET_WORKSPACE_VIEW"; view: WorkspaceView }
   | { type: "TOGGLE_COLLAPSED_NODE"; nodeId: string }
   | { type: "TOGGLE_PACKED_ITEM"; itemId: string }
   | { type: "SET_ALL_PACKED"; packed: boolean }
@@ -59,6 +64,10 @@ export type AppAction =
   | { type: "UPDATE_MAP_NODE"; nodeId: string; patch: MapNodePatch }
   | { type: "DELETE_MAP_NODE"; nodeId: string }
   | { type: "UNDO_MAP_CHANGE" }
+  | { type: "ACKNOWLEDGE_WARNING"; warningId: string }
+  | { type: "TOGGLE_DEPARTURE_CHECK"; checkId: string }
+  | { type: "IMPORT_DOCUMENT"; document: PackMapDocument; sourceText: string; migrated: boolean }
+  | { type: "RESTORE_IMPORT_BACKUP" }
   | { type: "EDIT_TRIP" }
   | { type: "CANCEL_EDIT" }
   | { type: "RESET_PROJECT" };
@@ -80,8 +89,10 @@ const initialState: AppState = {
   workspaceSearch: "",
   selectedMapNodeId: null,
   workspaceMode: "inspect",
+  workspaceView: "map",
   collapsedNodeIds: [],
   documentHistory: [],
+  importBackupAvailable: false,
   notice: null,
   error: null,
 };
@@ -92,7 +103,8 @@ function applyDocumentMutation(
   notice: string,
 ): AppState {
   if (!state.activeDocument) return state;
-  const nextDocument = mutate(state.activeDocument);
+  const mutatedDocument = mutate(state.activeDocument);
+  const nextDocument = mutatedDocument === state.activeDocument ? mutatedDocument : refreshSafetyData(mutatedDocument);
   if (nextDocument === state.activeDocument) return { ...state, notice: "这项操作不能在当前位置完成。" };
   return {
     ...state,
@@ -136,8 +148,10 @@ export function reduceAppState(state: AppState, action: AppAction): AppState {
         workspaceSearch: "",
         selectedMapNodeId: null,
         workspaceMode: "inspect",
+        workspaceView: "map",
         collapsedNodeIds: [],
         documentHistory: [],
+        importBackupAvailable: state.importBackupAvailable,
         notice: null,
         error: null,
       };
@@ -181,10 +195,11 @@ export function reduceAppState(state: AppState, action: AppAction): AppState {
         ...state,
         screen: "workspace",
         activeDocument: state.activeDocument && state.planningResult
-          ? syncPackingMap(state.activeDocument, state.draft, state.planningResult)
+          ? refreshSafetyData(syncPackingMap(state.activeDocument, state.draft, state.planningResult))
           : state.activeDocument,
         planningConfirmed: true,
         workspaceMode: "inspect",
+        workspaceView: "map",
         selectedMapNodeId: null,
         documentHistory: [],
         notice: "候选清单已建立为收纳地图。",
@@ -198,6 +213,8 @@ export function reduceAppState(state: AppState, action: AppAction): AppState {
       return { ...state, selectedMapNodeId: action.nodeId, workspaceMode: "inspect", notice: null };
     case "SET_WORKSPACE_MODE":
       return { ...state, workspaceMode: action.mode, selectedMapNodeId: action.mode === "inspect" ? state.selectedMapNodeId : null, notice: null };
+    case "SET_WORKSPACE_VIEW":
+      return { ...state, workspaceView: action.view, selectedMapNodeId: null, workspaceMode: "inspect", notice: null, error: null };
     case "TOGGLE_COLLAPSED_NODE":
       return {
         ...state,
@@ -232,6 +249,47 @@ export function reduceAppState(state: AppState, action: AppAction): AppState {
         notice: "已撤销上一步操作。",
       };
     }
+    case "ACKNOWLEDGE_WARNING":
+      return applyDocumentMutation(state, (document) => acknowledgeWarning(document, action.warningId), "安全提醒状态已更新。");
+    case "TOGGLE_DEPARTURE_CHECK":
+      return applyDocumentMutation(state, (document) => toggleDepartureCheck(document, action.checkId), "出发检查状态已更新。");
+    case "IMPORT_DOCUMENT": {
+      const document = refreshSafetyData(action.document);
+      return {
+        ...state,
+        screen: "workspace",
+        selectedTemplate: null,
+        wizardStep: 0,
+        draft: {
+          name: document.trip.name,
+          origin: document.trip.origin,
+          destinationsText: document.trip.destinations.join("、"),
+          startDate: document.trip.startDate,
+          endDate: document.trip.endDate,
+          travelers: document.trip.travelers,
+          tripType: document.trip.tripType,
+          laundryFrequency: document.trip.laundryFrequency,
+          transportModes: [...document.trip.transportModes],
+          transportNotes: document.trip.transportNotes,
+          specialNeeds: document.trip.specialNeeds,
+          bagSetup: document.trip.bagSetup,
+        },
+        activeDocument: document,
+        planningResult: null,
+        planningConfirmed: true,
+        workspaceSearch: "",
+        selectedMapNodeId: null,
+        workspaceMode: "inspect",
+        workspaceView: "map",
+        collapsedNodeIds: [],
+        documentHistory: [],
+        importBackupAvailable: true,
+        notice: action.migrated ? "旧版 1.0 文件已迁移并导入。" : "PackMap 文件已导入。",
+        error: null,
+      };
+    }
+    case "RESTORE_IMPORT_BACKUP":
+      return state;
     case "EDIT_TRIP":
       return { ...state, screen: "wizard", wizardStep: 0, error: null };
     case "CANCEL_EDIT":
@@ -249,31 +307,46 @@ function isUsableState(value: AppState | null): value is AppState {
   return Boolean(value && ["templates", "wizard", "review", "workspace"].includes(value.screen) && value.draft);
 }
 
+function normalizeState(value: AppState): AppState {
+  return {
+    ...initialState,
+    ...value,
+    planningResult: value.planningResult ?? null,
+    planningConfirmed: value.planningConfirmed ?? false,
+    workspaceSearch: value.workspaceSearch ?? "",
+    selectedMapNodeId: value.selectedMapNodeId ?? null,
+    workspaceMode: value.workspaceMode ?? "inspect",
+    workspaceView: value.workspaceView ?? "map",
+    collapsedNodeIds: value.collapsedNodeIds ?? [],
+    documentHistory: value.documentHistory ?? [],
+    importBackupAvailable: hasImportBackup(),
+    notice: value.notice ?? null,
+  };
+}
+
 export function createAppStore(): AppStore {
   const persisted = loadState();
   let state = isUsableState(persisted)
-    ? {
-        ...initialState,
-        ...persisted,
-        planningResult: persisted.planningResult ?? null,
-        planningConfirmed: persisted.planningConfirmed ?? false,
-        workspaceSearch: persisted.workspaceSearch ?? "",
-        selectedMapNodeId: persisted.selectedMapNodeId ?? null,
-        workspaceMode: persisted.workspaceMode ?? "inspect",
-        collapsedNodeIds: persisted.collapsedNodeIds ?? [],
-        documentHistory: persisted.documentHistory ?? [],
-        notice: persisted.notice ?? null,
-      }
+    ? normalizeState(persisted)
     : { ...initialState, draft: { ...EMPTY_TRIP_DRAFT } };
   if (state.activeDocument && state.planningResult && state.planningConfirmed && state.activeDocument.containers.length === 0) {
     state = { ...state, activeDocument: syncPackingMap(state.activeDocument, state.draft, state.planningResult) };
   }
+  if (state.activeDocument && state.planningConfirmed) state = { ...state, activeDocument: refreshSafetyData(state.activeDocument) };
   const listeners = new Set<(nextState: AppState) => void>();
 
   return {
     getState: () => state,
     dispatch(action) {
-      state = reduceAppState(state, action);
+      if (action.type === "RESTORE_IMPORT_BACKUP") {
+        const backup = loadImportBackup();
+        state = isUsableState(backup)
+          ? { ...normalizeState(backup), importBackupAvailable: true, notice: "已恢复导入前的旅行。", error: null }
+          : { ...state, notice: null, error: "没有可恢复的导入前备份。" };
+      } else {
+        if (action.type === "IMPORT_DOCUMENT") saveImportBackup(state, action.sourceText);
+        state = reduceAppState(state, action);
+      }
       if (action.type === "RESET_PROJECT") clearState();
       else saveState(state);
       listeners.forEach((listener) => listener(state));

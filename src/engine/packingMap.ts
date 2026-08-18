@@ -1,3 +1,4 @@
+import { ITEM_CATALOG } from "../data/itemCatalog";
 import type {
   BagNode,
   CompartmentNode,
@@ -451,4 +452,3 @@ export function setAllItemsPacked(document: PackMapDocument, packed: boolean): P
     })),
   });
 }
-import { ITEM_CATALOG } from "../data/itemCatalog";

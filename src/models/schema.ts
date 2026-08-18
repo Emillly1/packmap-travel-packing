@@ -12,4 +12,5 @@ export interface PackMapDocument {
   containers: LuggageNode[];
   departureChecks: DepartureCheck[];
   warnings: PackingWarning[];
+  metadata?: Record<string, unknown>;
 }

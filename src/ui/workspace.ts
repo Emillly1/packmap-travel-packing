@@ -10,6 +10,7 @@ import {
 import { CATEGORY_LABELS } from "../models/planning";
 import type { BagNode, ContainerTransport, ItemNode, PackingNode } from "../models/packing";
 import type { AppState, AppStore, WorkspaceMode } from "../state/store";
+import { bindReleaseEvents, renderAuxiliaryView, renderPrintSheet, renderWorkspaceTabs } from "./releaseViews";
 
 const CATEGORY_MARKS: Record<string, string> = {
   documents: "证",
@@ -290,14 +291,18 @@ export function renderWorkspace(state: AppState): string {
         <div><span class="eyebrow">ACTIVE PACKING MAP / ${document.schemaVersion}</span><h1>${escapeHtml(document.trip.name)}</h1><p>${escapeHtml(document.trip.origin)} → ${document.trip.destinations.map(escapeHtml).join("、")}</p></div>
         <div><button class="quiet-button" type="button" data-action="review-candidates">重新筛选</button><button class="quiet-button" type="button" data-action="edit-trip">编辑旅行</button></div>
       </section>
-      <section class="packing-workspace-grid">
-        ${renderInventory(state)}
-        <section class="packing-canvas" aria-label="箱包收纳地图">
-          <header><div><span>PACKING BOARD</span><strong>${document.containers.length} 个箱包</strong></div><small>拖放已开启</small></header>
-          <div class="packing-canvas__cases">${renderLuggage(state, matchedIds)}</div>
+      ${renderWorkspaceTabs(state)}
+      ${state.workspaceView === "map" ? `
+        <section class="packing-workspace-grid">
+          ${renderInventory(state)}
+          <section class="packing-canvas" aria-label="箱包收纳地图">
+            <header><div><span>PACKING BOARD</span><strong>${document.containers.length} 个箱包</strong></div><small>拖放已开启</small></header>
+            <div class="packing-canvas__cases">${renderLuggage(state, matchedIds)}</div>
+          </section>
+          ${renderInspector(state)}
         </section>
-        ${renderInspector(state)}
-      </section>
+      ` : renderAuxiliaryView(state)}
+      ${renderPrintSheet(state)}
     </main>
   `;
 }
@@ -311,6 +316,7 @@ function scrollToMapNode(root: HTMLElement, nodeId: string): void {
 }
 
 export function bindWorkspaceEvents(root: HTMLElement, store: AppStore): void {
+  bindReleaseEvents(root, store);
   const search = root.querySelector<HTMLInputElement>("#workspaceSearch");
   search?.addEventListener("input", () => store.dispatch({ type: "SET_WORKSPACE_SEARCH", query: search.value }));
   root.querySelector<HTMLElement>("[data-clear-search]")?.addEventListener("click", () => store.dispatch({ type: "SET_WORKSPACE_SEARCH", query: "" }));
