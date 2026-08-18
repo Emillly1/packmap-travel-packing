@@ -15,7 +15,7 @@
 
 ## Quality
 
-- [ ] Typecheck, unit tests, browser tests, and production build pass in CI.
+- [x] Typecheck, unit tests, browser tests, and production build pass in CI.
 - [x] Template, setup, packing, search, export, and restore flows pass on desktop and mobile.
 - [x] Keyboard focus, status announcements, focus visibility, and reduced motion are checked.
 - [x] Print output is generated for A4 and US Letter.
@@ -32,8 +32,10 @@
 - [x] GitHub Pages production environment and git-based rollback path are documented.
 - [x] Privacy-safe local Beta feedback summaries link to a structured GitHub Issue form.
 - [x] No analytics are enabled, and the in-app disclosure states this explicitly.
-- [ ] GitHub Pages HTTPS, refresh behavior, cache headers, and asset loading are verified after first deployment.
+- [x] GitHub Pages HTTPS, refresh behavior, cache headers, and asset loading are verified after first deployment.
 
 ## Release decision
 
 Ship only when the core journey is usable without AI, account, or external service availability.
+
+Beta `0.2.0-beta.1` was deployed from commit `d10e023` to `https://emillly1.github.io/packmap-travel-packing/` on 2026-08-18. CI, Skill validation, Pages deployment, live asset checks, and the public feedback route passed.
