@@ -1,0 +1,10 @@
+{
+  "name": "PackMap - 旅行行李位置地图",
+  "short_name": "PackMap",
+  "description": "从行程生成清单，把每件物品放进具体箱包与收纳袋。",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f4f5ef",
+  "theme_color": "#f4f5ef",
+  "lang": "zh-CN"
+}

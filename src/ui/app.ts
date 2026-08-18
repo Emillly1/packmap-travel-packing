@@ -83,7 +83,7 @@ function renderTemplates(): string {
           <button class="primary-button" type="button" data-template="city">开始规划</button>
         </div>
         <figure class="intro-art">
-          <img src="/assets/packmap-editorial.jpg" alt="打开的行李箱、收纳分区和随身背包">
+          <img src="${import.meta.env.BASE_URL}assets/packmap-editorial.jpg" alt="打开的行李箱、收纳分区和随身背包">
           <figcaption>PACKING STUDY NO. 01</figcaption>
         </figure>
       </section>

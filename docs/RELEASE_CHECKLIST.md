@@ -29,10 +29,10 @@
 
 ## Operations
 
-- [ ] Production environment and rollback artifact are identified.
-- [x] Privacy-safe local Beta feedback summaries are working; an external destination is still required for public release.
+- [x] GitHub Pages production environment and git-based rollback path are documented.
+- [x] Privacy-safe local Beta feedback summaries link to a structured GitHub Issue form.
 - [x] No analytics are enabled, and the in-app disclosure states this explicitly.
-- [ ] Domain, HTTPS, cache headers, and asset loading are verified.
+- [ ] GitHub Pages HTTPS, refresh behavior, cache headers, and asset loading are verified after first deployment.
 
 ## Release decision
 

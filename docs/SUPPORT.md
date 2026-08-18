@@ -2,7 +2,7 @@
 
 Use the in-app **Beta 反馈** action to download a privacy-safe diagnostic summary. Add a concise description of the problem before downloading it.
 
-When this repository is published, attach that summary to a GitHub issue together with:
+Open a [PackMap Beta feedback issue](https://github.com/Emillly1/packmap-travel-packing/issues/new?template=beta-feedback.yml) and attach or paste that summary together with:
 
 - the steps that led to the problem;
 - what you expected to happen;

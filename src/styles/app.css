@@ -198,6 +198,7 @@ dd { margin: 0; max-width: 120px; text-align: right; font-size: 11px; font-weigh
 .release-dialog__body textarea { width: 100%; padding: 9px; border: 1px solid var(--line-strong); border-radius: 5px; background: white; color: var(--ink); resize: vertical; }
 .release-dialog__shell > footer { padding: 12px 16px; display: flex; align-items: center; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--line); }
 .release-dialog__shell .release-delete { width: auto; min-height: 40px; margin: 0 auto 0 0; padding: 0 12px; }
+.release-dialog__shell .feedback-link { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
 @media (max-width: 1020px) {
   .template-intro { grid-template-columns: 1fr; }
   .intro-copy { padding: 48px 0 28px; }
@@ -400,6 +401,7 @@ dd { margin: 0; max-width: 120px; text-align: right; font-size: 11px; font-weigh
   .app-release-footer { width: min(100% - 18px, var(--content)); align-items: flex-start; flex-direction: column; }
   .release-dialog__shell > footer { align-items: stretch; flex-direction: column; }
   .release-dialog__shell .release-delete { width: 100%; margin: 0; }
+  .release-dialog__shell .feedback-link { width: 100%; }
   .packing-workspace { width: min(100% - 14px, 1540px); padding-top: 8px; }
   .workspace-titlebar { align-items: flex-start; flex-direction: column; }
   .workspace-titlebar > div:last-child { width: 100%; }

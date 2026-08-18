@@ -1,5 +1,5 @@
 import { flattenMap } from "../engine/packingMap";
-import { APP_VERSION } from "../release";
+import { APP_VERSION, FEEDBACK_URL } from "../release";
 import type { AppStore } from "../state/store";
 
 export function renderBetaChrome(): string {
@@ -23,10 +23,10 @@ export function renderBetaChrome(): string {
       <form class="release-dialog__shell" data-feedback-form>
         <header><div><span>BETA FEEDBACK</span><h2 id="feedback-title">生成反馈摘要</h2></div><button type="button" data-close-release-dialog aria-label="关闭">×</button></header>
         <div class="release-dialog__body">
-          <p>摘要只包含版本、页面、箱包与物品数量，不包含名称、目的地或具体行李内容。</p>
+          <p>摘要只包含版本、页面、箱包与物品数量，不包含名称、目的地或具体行李内容。下载后可附在公开反馈中。</p>
           <label>问题或建议<textarea name="message" rows="6" placeholder="请描述发生了什么，以及你原本希望怎样工作"></textarea></label>
         </div>
-        <footer><button class="quiet-button" type="button" data-close-release-dialog>取消</button><button class="primary-button" type="submit">下载反馈摘要</button></footer>
+        <footer><button class="quiet-button" type="button" data-close-release-dialog>取消</button><a class="quiet-button feedback-link" href="${FEEDBACK_URL}" target="_blank" rel="noreferrer">打开反馈页面</a><button class="primary-button" type="submit">下载反馈摘要</button></footer>
       </form>
     </dialog>
   `;

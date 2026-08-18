@@ -1,0 +1,49 @@
+name: Beta 反馈
+description: 报告问题或提出体验建议
+title: "[Beta] "
+labels: ["beta-feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢试用 PackMap。请勿公开护照号、预订编号、住址、医疗记录、支付信息或未脱敏的旅行导出文件。
+  - type: dropdown
+    id: feedback-type
+    attributes:
+      label: 反馈类型
+      options:
+        - 功能无法使用
+        - 数据或导入导出问题
+        - 界面与操作体验
+        - 功能建议
+        - 其他
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 发生了什么
+      description: 请写明操作步骤、实际结果和预期结果。
+      placeholder: |
+        1. 我从……开始
+        2. 点击……
+        3. 实际出现……，我原本希望……
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: PackMap 版本
+      placeholder: 例如 0.2.0-beta.1
+  - type: textarea
+    id: diagnostic
+    attributes:
+      label: 反馈摘要或补充信息
+      description: 可粘贴应用内下载的隐私安全摘要；截图前请确认没有敏感旅行信息。
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: 隐私确认
+      options:
+        - label: 我已确认内容不含敏感个人或旅行信息。
+          required: true

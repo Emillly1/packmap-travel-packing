@@ -1,7 +1,8 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const target = await fetch("http://127.0.0.1:9222/json/new?http%3A%2F%2F127.0.0.1%3A4173%2F", { method: "PUT" }).then((response) => response.json());
+const appUrl = process.env.PACKMAP_URL ?? "http://127.0.0.1:4173/";
+const target = await fetch(`http://127.0.0.1:9222/json/new?${encodeURIComponent(appUrl)}`, { method: "PUT" }).then((response) => response.json());
 const socket = new WebSocket(target.webSocketDebuggerUrl);
 const pending = new Map();
 const runtimeExceptions = [];
@@ -381,6 +382,14 @@ await waitFor('document.querySelector(".organization-screen")', "Mobile organiza
 const mobileOrganizationOverflow = await evaluate("document.documentElement.scrollWidth > window.innerWidth");
 if (mobileOrganizationOverflow) throw new Error("Mobile organization confirmation has horizontal overflow");
 await screenshot("organization-confirm-mobile.png");
+await evaluate('document.querySelector("[data-open-feedback]").click()');
+await waitFor('document.querySelector("[data-feedback-dialog]").open', "Mobile feedback dialog did not open");
+const feedbackLinkReady = await evaluate('document.querySelector(".feedback-link")?.href.includes("/Emillly1/packmap-travel-packing/issues/new")');
+if (!feedbackLinkReady) throw new Error("Public Beta feedback destination is missing");
+const feedbackDialogOverflow = await evaluate("document.documentElement.scrollWidth > window.innerWidth");
+if (feedbackDialogOverflow) throw new Error("Mobile feedback dialog has horizontal overflow");
+await screenshot("phase-6-feedback-mobile.png");
+await evaluate('document.querySelector("[data-feedback-dialog] [data-close-release-dialog]").click()');
 await evaluate('window.confirm = () => true; document.querySelector("[data-open-privacy]").click()');
 await waitFor('document.querySelector("[data-privacy-dialog]").open', "Mobile privacy dialog did not open");
 await evaluate('document.querySelector("[data-delete-local-data]").click()');
@@ -408,6 +417,8 @@ console.log(JSON.stringify({
   mobileOverflow,
   mobileReviewOverflow,
   mobileOrganizationOverflow,
+  feedbackLinkReady,
+  feedbackDialogOverflow,
   localDataDeletionReady,
   runtimeExceptionCount: runtimeExceptions.length,
   checkedBagCounts,
@@ -418,7 +429,7 @@ console.log(JSON.stringify({
   singleCompartmentFill,
   legacyImportedPath,
   itemMoveDialogTitle,
-  screenshots: 11,
+  screenshots: 12,
   printPdf: "artifacts/phase-4-print.pdf",
   letterPrintPdf: "artifacts/phase-5-print-letter.pdf",
 }, null, 2));

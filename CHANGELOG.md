@@ -9,6 +9,7 @@
 - Original organizer text import, including indentation, quantities, packed state, and `袋子面` to `拉链面` migration.
 - Transport safety audit, departure checklist, JSON/TXT portability, import recovery, and A4/US Letter print output.
 - Local privacy and usage disclosure, complete local-data deletion, and privacy-safe Beta feedback summaries.
+- GitHub Pages deployment, public Beta issue form, and a documented rollback path.
 - Five-scenario Beta acceptance matrix, browser accessibility checks, and performance budgets.
 
 ### Changed
