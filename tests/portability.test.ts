@@ -4,6 +4,7 @@ import { syncPackingMap } from "../src/engine/packingMap";
 import {
   PackMapImportError,
   importPackMapText,
+  importPrototypeLocationText,
   serializeDocumentJson,
   serializeDocumentText,
 } from "../src/engine/portability";
@@ -61,5 +62,37 @@ describe("PackMap portability", () => {
 
   it("rejects TXT whose exact recovery payload is missing", () => {
     expect(() => importPackMapText("PACKMAP 2.0.0\n旅行：损坏文件")).toThrow("缺少可恢复的数据段");
+  });
+
+  it("imports the indented text exported by the original organizer", () => {
+    const text = `欧洲行李位置地图
+导出时间：2026/8/12 15:33:59
+
+新秀丽 28寸
+  开放面
+    夏季衣物包1
+      [已装] 短袖 5件
+      [未装] 干发帽
+  袋子面
+    [已装] 吹风机
+25L双肩包
+  主仓
+    证件包
+      [已装] 护照（必须随身）
+待放入
+  尚未归位
+    [未装] 拖鞋`;
+    const document = importPrototypeLocationText(text);
+    expect(document.containers).toHaveLength(3);
+    expect(document.containers[0].transport).toBe("checked");
+    expect(document.containers[1].transport).toBe("carry-on");
+    expect(document.containers[0].children[1].name).toBe("拉链面");
+    const shirt = document.containers[0].children[0].children[0];
+    expect(shirt.type).toBe("bag");
+    if (shirt.type !== "bag" || shirt.children[0].type !== "item" || shirt.children[1].type !== "item") throw new Error("prototype hierarchy was not imported");
+    expect(shirt.children[0].quantity).toBe("5件");
+    expect(shirt.children[1].packed).toBe(false);
+    expect(importPackMapText(text).sourceVersion).toBe("prototype-text");
+    expect(document.metadata?.migratedFrom).toBe("prototype-text");
   });
 });

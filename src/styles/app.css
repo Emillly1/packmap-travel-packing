@@ -301,6 +301,7 @@ dd { margin: 0; max-width: 120px; text-align: right; font-size: 11px; font-weigh
 .packing-case__header b { padding: 4px 6px; border: 1px solid currentColor; border-radius: 4px; font-size: 9px; }
 .packing-case__header small { color: var(--muted); font-size: 9px; }
 .packing-case__body { min-height: 180px; padding: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 9px; align-items: start; }
+.packing-case__body > .compartment:only-child { grid-column: 1 / -1; }
 .compartment { min-width: 0; min-height: 170px; padding: 8px; border: 1px solid color-mix(in srgb, currentColor 25%, var(--line)); border-radius: 6px; background: rgba(255, 255, 255, 0.64); transition: background 140ms ease, box-shadow 140ms ease, transform 140ms ease; }
 .compartment.is-selected { box-shadow: inset 0 0 0 2px var(--ink); }
 .compartment.is-drop-ready, .pouch.is-drop-ready { background: var(--amber-soft); box-shadow: inset 0 0 0 2px var(--amber); transform: scale(1.006); }
@@ -416,6 +417,7 @@ dd { margin: 0; max-width: 120px; text-align: right; font-size: 11px; font-weigh
 .proposal-add-actions { display: flex; gap: 5px; }
 .proposal-add-actions button, .proposal-compartment > header button { min-height: 29px; padding: 0 8px; border: 1px solid var(--line-strong); border-radius: 4px; background: white; color: var(--ink); font-size: 9px; }
 .proposal-compartments { padding: 10px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; align-items: start; }
+.proposal-compartment:only-child { grid-column: 1 / -1; }
 .proposal-compartment { min-width: 0; min-height: 150px; padding: 8px; border: 1px solid color-mix(in srgb, currentColor 22%, var(--line)); border-radius: 6px; background: rgba(255, 255, 255, 0.68); }
 .proposal-compartment > header { min-height: 37px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px dashed var(--line); }
 .proposal-compartment > header > div { display: flex; align-items: center; gap: 7px; }
@@ -426,13 +428,16 @@ dd { margin: 0; max-width: 120px; text-align: right; font-size: 11px; font-weigh
 .proposal-pouch:nth-of-type(4n + 2) { border-left-color: var(--coral); }
 .proposal-pouch:nth-of-type(4n + 3) { border-left-color: var(--blue); }
 .proposal-pouch:nth-of-type(4n) { border-left-color: var(--amber); }
-.proposal-pouch > header { min-height: 39px; padding: 5px 6px; display: grid; grid-template-columns: minmax(110px, 1fr) auto minmax(130px, 0.8fr) 26px 26px; align-items: center; gap: 5px; border-bottom: 1px dashed var(--line); }
+.proposal-pouch > header { min-height: 69px; padding: 5px 6px; display: grid; grid-template-columns: minmax(0, 1fr) auto 26px 26px; align-items: center; gap: 5px; border-bottom: 1px dashed var(--line); }
 .proposal-pouch > header form { min-width: 0; height: 28px; display: grid; grid-template-columns: minmax(0, 1fr) 27px; }
 .proposal-pouch > header input, .proposal-pouch > header select { min-width: 0; border: 1px solid var(--line); background: white; color: var(--ink); font-size: 9px; }
 .proposal-pouch > header input { padding: 0 6px; border-radius: 4px 0 0 4px; font-weight: 750; }
 .proposal-pouch > header form button, .proposal-pouch > header > button { padding: 0; border: 1px solid var(--line); border-radius: 4px; background: white; font-size: 10px; }
 .proposal-pouch > header form button { border-left: 0; border-radius: 0 4px 4px 0; }
 .proposal-pouch > header > span { color: var(--muted); font-size: 8px; }
+.proposal-pouch > header > select { width: 100%; min-height: 28px; grid-column: 1 / -1; grid-row: 2; border-radius: 4px; }
+.proposal-pouch > header > button:not(.proposal-delete) { grid-column: 3; grid-row: 1; }
+.proposal-pouch > header > .proposal-delete { grid-column: 4; grid-row: 1; }
 .proposal-delete { color: var(--coral); }
 .proposal-pouch__contents { min-height: 47px; padding: 7px; display: flex; flex-wrap: wrap; gap: 5px; }
 .proposal-item { min-width: 0; max-width: 180px; min-height: 31px; padding: 5px 7px; display: flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 4px; background: white; color: var(--ink); text-align: left; cursor: grab; }
@@ -467,8 +472,7 @@ dd { margin: 0; max-width: 120px; text-align: right; font-size: 11px; font-weigh
   .proposal-luggage > header { grid-template-columns: minmax(0, 1fr) auto; }
   .proposal-add-actions { grid-column: 1 / -1; }
   .proposal-compartments { grid-template-columns: 1fr; }
-  .proposal-pouch > header { grid-template-columns: minmax(120px, 1fr) auto 26px 26px; }
-  .proposal-pouch > header select { grid-column: 1 / -1; min-height: 30px; }
+  .proposal-pouch > header select { min-height: 30px; }
 }
 
 /* Safety, departure, and portability */

@@ -358,6 +358,135 @@ export function serializeDocumentText(document: PackMapDocument): string {
   return lines.join("\n");
 }
 
+function prototypeTransport(name: string): ContainerTransport {
+  if (/随身|背包|双肩包|手提|登机|cabin/i.test(name)) return "carry-on";
+  if (/托运|行李箱|旅行箱|拉杆箱|寸|新秀丽|日默瓦|rimowa|samsonite/i.test(name)) return "checked";
+  return "none";
+}
+
+function prototypeTimestamp(text: string): { iso: string; date: string; raw?: string } {
+  const match = text.match(/导出时间[：:]\s*(\d{4})\/(\d{1,2})\/(\d{1,2})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+  if (!match) {
+    const now = new Date();
+    return { iso: now.toISOString(), date: now.toISOString().slice(0, 10) };
+  }
+  const [, year, month, day, hour = "0", minute = "0", second = "0"] = match;
+  const date = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+  return {
+    iso: `${date}T${hour.padStart(2, "0")}:${minute.padStart(2, "0")}:${second.padStart(2, "0")}.000Z`,
+    date,
+    raw: match[0].replace(/^导出时间[：:]\s*/, ""),
+  };
+}
+
+function prototypeItemParts(value: string): { name: string; quantity: string } {
+  const patterns = [
+    /^(.*?)[\s　]+(\d+(?:\.\d+)?\s*(?:mg|g|ml|毫升)(?:\s*[×x*]\s*\d+\s*[\p{Script=Han}]*)?)$/iu,
+    /^(.*?)[\s　]*([×x*]\s*\d+\s*[\p{Script=Han}]*)$/u,
+    /^(.*?)[\s　]+(\d+\s*(?:件|套|条|双|个|包|瓶|支|颗|根|片|份|本|把|块|副|枚|张|盒|袋|卷|台|罐|杯))$/u,
+    /^(.*?)[\s　]+([一二三四五六七八九十两]+\s*(?:件|套|条|双|个|包|瓶|支|颗|根|片|份|本|把|块|副|枚|张|盒|袋|卷|台|罐|杯))$/u,
+  ];
+  for (const pattern of patterns) {
+    const match = value.match(pattern);
+    if (match?.[1].trim()) return { name: match[1].trim(), quantity: match[2].trim() };
+  }
+  return { name: value.trim(), quantity: "1 件" };
+}
+
+function normalizePrototypeName(value: string): string {
+  return value.trim() === "袋子面" ? "拉链面" : value.trim();
+}
+
+export function importPrototypeLocationText(sourceText: string): PackMapDocument {
+  const rawLines = sourceText.replaceAll("\t", "  ").split(/\r?\n/);
+  if (!rawLines.some((line) => /^\s*\[(?:已装|未装)\]\s+/.test(line))) {
+    throw new PackMapImportError("旧版位置地图中没有找到“[已装]”或“[未装]”物品。");
+  }
+  const timestamp = prototypeTimestamp(sourceText);
+  const firstContent = rawLines.find((line) => line.trim())?.trim() ?? "导入的旅行";
+  const hasTitle = /位置地图|行李地图|收纳地图/.test(firstContent);
+  const title = hasTitle ? firstContent : "导入的旅行位置地图";
+  let sequence = 0;
+  const nextId = (type: string) => `prototype-${type}-${++sequence}`;
+  const containers: LuggageNode[] = [];
+  const stack: Array<{ depth: number; node: LuggageNode | CompartmentNode | BagNode }> = [];
+
+  rawLines.forEach((rawLine) => {
+    if (!rawLine.trim() || rawLine.trim() === title || /^导出时间[：:]/.test(rawLine.trim())) return;
+    const spaces = rawLine.match(/^\s*/)?.[0].length ?? 0;
+    const depth = Math.floor(spaces / 2);
+    const content = rawLine.trim();
+    while (stack.length && stack.at(-1)!.depth >= depth) stack.pop();
+    const parent = stack.at(-1)?.node;
+    const itemMatch = content.match(/^\[(已装|未装)\]\s*(.+)$/);
+    if (itemMatch) {
+      if (!parent || parent.type === "luggage") throw new PackMapImportError(`物品“${itemMatch[2]}”缺少所属分区。`);
+      const parts = prototypeItemParts(itemMatch[2]);
+      const item: ItemNode = {
+        id: nextId("item"),
+        type: "item",
+        name: parts.name,
+        quantity: parts.quantity,
+        category: "custom",
+        packed: itemMatch[1] === "已装",
+        transportRule: /必须随身/.test(parts.name) ? "carry-on" : /必须托运/.test(parts.name) ? "checked" : "none",
+        access: "any",
+        recommendation: "bring",
+        stageIds: [],
+      };
+      parent.children.push(item);
+      return;
+    }
+
+    const name = normalizePrototypeName(content);
+    if (depth === 0) {
+      const luggage: LuggageNode = { id: nextId("luggage"), type: "luggage", name, transport: prototypeTransport(name), children: [] };
+      containers.push(luggage);
+      stack.push({ depth, node: luggage });
+      return;
+    }
+    if (depth === 1) {
+      if (!parent || parent.type !== "luggage") throw new PackMapImportError(`分区“${name}”缺少所属箱包。`);
+      const compartment: CompartmentNode = { id: nextId("compartment"), type: "compartment", name, children: [] };
+      parent.children.push(compartment);
+      stack.push({ depth, node: compartment });
+      return;
+    }
+    if (!parent || parent.type === "luggage") throw new PackMapImportError(`收纳袋“${name}”缺少所属分区。`);
+    const bag: BagNode = { id: nextId("bag"), type: "bag", name, children: [] };
+    parent.children.push(bag);
+    stack.push({ depth, node: bag });
+  });
+
+  if (!containers.length) throw new PackMapImportError("旧版位置地图中没有找到箱包一级目录。");
+  const bagSetup = containers.map((luggage) => `${luggage.name}：${luggage.children.map((child) => child.name).join("、") || "主区域"}`).join("\n");
+  return {
+    schemaVersion: CURRENT_SCHEMA_VERSION,
+    id: `trip-prototype-${Date.now().toString(36)}`,
+    createdAt: timestamp.iso,
+    updatedAt: new Date().toISOString(),
+    trip: {
+      name: title,
+      origin: "待补充",
+      destinations: ["待补充"],
+      startDate: timestamp.date,
+      endDate: timestamp.date,
+      travelers: 1,
+      tripType: "leisure",
+      laundryFrequency: "weekly",
+      transportModes: [],
+      transportNotes: "",
+      specialNeeds: "由旧版文字位置地图导入；请在“编辑旅行”中补充行程资料。",
+      bagSetup,
+      stages: [],
+    },
+    containers,
+    departureChecks: [],
+    warnings: [],
+    metadata: { migratedFrom: "prototype-text", originalExportTime: timestamp.raw },
+  };
+}
+
 export function importPackMapText(sourceText: string): ImportResult {
   const text = sourceText.trim();
   if (!text) throw new PackMapImportError("导入内容为空。");
@@ -374,7 +503,12 @@ export function importPackMapText(sourceText: string): ImportResult {
     try {
       value = JSON.parse(text);
     } catch {
-      throw new PackMapImportError("文件不是有效的 JSON 或 PackMap TXT。");
+      try {
+        return { document: importPrototypeLocationText(text), sourceVersion: "prototype-text", migrated: true };
+      } catch (prototypeError) {
+        if (prototypeError instanceof PackMapImportError && /\[(?:已装|未装)\]/.test(text)) throw prototypeError;
+        throw new PackMapImportError("文件不是有效的 JSON、PackMap TXT 或旧版位置地图。");
+      }
     }
   }
   const record = isRecord(value) ? value : null;

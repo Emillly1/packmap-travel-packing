@@ -85,7 +85,7 @@ await evaluate(`
 `);
 await waitFor('document.querySelector("#bagSetup")', "Luggage step did not open");
 await evaluate(`
-  document.querySelector("#bagSetup").value = "托运行李 A：开放面、拉链面\\n托运行李 B：开放面、拉链面\\n随身背包：主仓、前袋";
+  document.querySelector("#bagSetup").value = "托运行李 A：开放面、拉链面\\n托运行李 B：开放面、拉链面\\n随身背包：主仓";
   document.querySelector("[data-action=next]").click();
 `);
 await waitFor('document.querySelector(".review-screen")', "Packing review did not open");
@@ -124,6 +124,17 @@ await evaluate('document.querySelector("[data-action=confirm-candidates]").click
 await waitFor('document.querySelector(".organization-screen")', "Organization confirmation did not open");
 const organizationPouchCount = await evaluate('document.querySelectorAll(".proposal-pouch").length');
 if (organizationPouchCount < 5) throw new Error("Suggested pouch hierarchy was not generated");
+const proposalPouchOverflow = await evaluate('[...document.querySelectorAll(".proposal-pouch")].some((node) => node.scrollWidth > node.clientWidth + 1)');
+if (proposalPouchOverflow) throw new Error("Organization pouch controls overflow their containers");
+const singleCompartmentFill = await evaluate(`
+  (() => {
+    const luggage = [...document.querySelectorAll(".proposal-luggage")].find((node) => node.querySelector("h2")?.textContent === "随身背包");
+    const compartment = luggage?.querySelector(".proposal-compartment");
+    const compartments = luggage?.querySelector(".proposal-compartments");
+    return Boolean(compartment && compartments && compartment.getBoundingClientRect().width / compartments.getBoundingClientRect().width > 0.9);
+  })()
+`);
+if (!singleCompartmentFill) throw new Error("A single compartment did not fill its luggage width");
 if (!await evaluate('[...document.querySelectorAll(".proposal-item span")].some((node) => node.textContent === "便携热水袋")')) {
   throw new Error("Custom review item did not reach the organization proposal");
 }
@@ -239,6 +250,48 @@ await evaluate('document.querySelector("[data-workspace-view=data]").click()');
 await waitFor('document.querySelector(".data-view")', "Data view did not open");
 await evaluate(`
   (() => {
+    window.confirm = () => true;
+    const legacyText = \`欧洲行李位置地图
+导出时间：2026/8/12 15:33:59
+
+新秀丽 28寸
+  开放面
+    夏季衣物包1
+      [已装] 短袖 5件
+      [未装] 干发帽
+  袋子面
+    [已装] 吹风机
+25L双肩包
+  主仓
+    证件包
+      [已装] 护照（必须随身）
+待放入
+  尚未归位
+    [未装] 拖鞋\`;
+    const form = document.querySelector("[data-import-paste]");
+    form.querySelector("textarea").value = legacyText;
+    form.requestSubmit();
+  })()
+`);
+await waitFor('document.querySelector(".workspace-titlebar h1")?.textContent.trim() === "欧洲行李位置地图"', "Original organizer text was not imported");
+await evaluate(`
+  (() => {
+    const input = document.querySelector("#workspaceSearch");
+    input.value = "护照（必须随身）";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  })()
+`);
+await waitFor('document.querySelector(".search-result small")?.textContent.includes("证件包")', "Imported legacy hierarchy was not searchable");
+const legacyImportedPath = await evaluate('document.querySelector(".search-result small").textContent.trim()');
+await screenshot("legacy-text-import-desktop.png");
+await evaluate('document.querySelector("[data-workspace-view=data]").click()');
+await waitFor('!document.querySelector("[data-action=restore-import-backup]").disabled', "Legacy import did not create a backup");
+await evaluate('document.querySelector("[data-action=restore-import-backup]").click()');
+await waitFor('document.querySelector(".workspace-titlebar h1")?.textContent.trim() === "秋日意大利测试"', "Legacy import backup restore failed");
+await evaluate('document.querySelector("[data-workspace-view=data]").click()');
+await waitFor('document.querySelector(".data-view")', "Data view did not reopen after legacy restore");
+await evaluate(`
+  (() => {
     const form = document.querySelector("[data-import-paste]");
     form.querySelector("textarea").value = "not-json";
     form.requestSubmit();
@@ -314,8 +367,11 @@ console.log(JSON.stringify({
   checkedBagCounts,
   candidateCountAfterCustom,
   organizationPouchCount,
+  proposalPouchOverflow,
+  singleCompartmentFill,
+  legacyImportedPath,
   itemMoveDialogTitle,
-  screenshots: 8,
+  screenshots: 9,
   printPdf: "artifacts/phase-4-print.pdf",
 }, null, 2));
 socket.close();

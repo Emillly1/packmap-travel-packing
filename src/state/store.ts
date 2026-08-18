@@ -75,7 +75,7 @@ export type AppAction =
   | { type: "UNDO_MAP_CHANGE" }
   | { type: "ACKNOWLEDGE_WARNING"; warningId: string }
   | { type: "TOGGLE_DEPARTURE_CHECK"; checkId: string }
-  | { type: "IMPORT_DOCUMENT"; document: PackMapDocument; sourceText: string; migrated: boolean }
+  | { type: "IMPORT_DOCUMENT"; document: PackMapDocument; sourceText: string; sourceVersion: string; migrated: boolean }
   | { type: "RESTORE_IMPORT_BACKUP" }
   | { type: "EDIT_TRIP" }
   | { type: "CANCEL_EDIT" }
@@ -324,7 +324,9 @@ export function reduceAppState(state: AppState, action: AppAction): AppState {
         collapsedNodeIds: [],
         documentHistory: [],
         importBackupAvailable: true,
-        notice: action.migrated ? "旧版 1.0 文件已迁移并导入。" : "PackMap 文件已导入。",
+        notice: action.sourceVersion === "prototype-text"
+          ? "旧版文字位置地图已迁移导入；缺少的旅行资料可在“编辑旅行”中补充。"
+          : action.migrated ? "旧版 1.0 文件已迁移并导入。" : "PackMap 文件已导入。",
         error: null,
       };
     }

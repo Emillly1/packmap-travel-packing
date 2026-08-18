@@ -150,11 +150,11 @@ function renderDataView(state: AppState): string {
         </section>
         <section class="data-section">
           <header><span>02</span><h3>导入</h3></header>
-          <label class="file-import"><input id="packmapFileInput" type="file" accept=".json,.txt,application/json,text/plain"><span>选择 JSON 或 TXT 文件</span></label>
+          <label class="file-import"><input id="packmapFileInput" type="file" accept=".json,.txt,application/json,text/plain"><span>选择 JSON、TXT 或旧版文字地图</span></label>
           <form class="paste-import" data-import-paste>
             <label for="importText">粘贴内容</label>
-            <textarea id="importText" name="importText" rows="7" placeholder="粘贴 PackMap JSON 或 TXT"></textarea>
-            <button type="submit">验证并导入</button>
+            <textarea id="importText" name="importText" rows="7" placeholder="粘贴 PackMap JSON、TXT，或以缩进表示层级的旧版“欧洲行李位置地图”"></textarea>
+            <button type="submit">识别并导入</button>
           </form>
         </section>
         <section class="data-section data-section--backup">
@@ -207,8 +207,11 @@ function downloadText(filename: string, content: string, type: string): void {
 function importSource(store: AppStore, sourceText: string): void {
   try {
     const result = importPackMapText(sourceText);
-    if (!window.confirm(`已验证“${result.document.trip.name}”。导入将替换当前旅行，是否继续？`)) return;
-    store.dispatch({ type: "IMPORT_DOCUMENT", document: result.document, sourceText, migrated: result.migrated });
+    const itemCount = flattenMap(result.document.containers).filter((entry) => entry.node.type === "item").length;
+    const format = result.sourceVersion === "prototype-text" ? "旧版文字位置地图" : `PackMap ${result.sourceVersion}`;
+    const migrationNote = result.sourceVersion === "prototype-text" ? "\n旧称“袋子面”将自动改为“拉链面”，旅行资料可在导入后补充。" : "";
+    if (!window.confirm(`已识别 ${format}：\n“${result.document.trip.name}”\n${result.document.containers.length} 个箱包 · ${itemCount} 项物品${migrationNote}\n\n导入将替换当前旅行，是否继续？`)) return;
+    store.dispatch({ type: "IMPORT_DOCUMENT", document: result.document, sourceText, sourceVersion: result.sourceVersion, migrated: result.migrated });
   } catch (error) {
     const message = error instanceof PackMapImportError ? error.message : "导入失败，当前旅行未被修改。";
     store.dispatch({ type: "SET_ERROR", message });

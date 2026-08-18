@@ -8,7 +8,9 @@ The packing workflow automatically proposes nested pouches before the final map.
 
 The primary flow is: choose a template -> describe the trip -> review candidate items -> confirm the organization plan -> pack from the location map -> run safety and departure checks -> export or print.
 
-The release workspace also provides transport-aware warnings, a reusable departure checklist, lossless JSON and readable TXT exports, validated imports, legacy `1.0` migration, a dedicated pre-import recovery point, and a print-ready packing report.
+The release workspace also provides transport-aware warnings, a reusable departure checklist, lossless JSON and readable TXT exports, validated imports, legacy `1.0` migration, indented-text migration from the original organizer, a dedicated pre-import recovery point, and a print-ready packing report.
+
+Original organizer exports such as `欧洲行李位置地图` can be pasted directly into Data & Print. PackMap reconstructs luggage, compartments, nested pouches, item quantities, and packed status, while normalizing the old `袋子面` label to `拉链面`.
 
 ## Product principles
 
